@@ -31,7 +31,15 @@ Portdata <- Portdata %>% mutate(Cust_group = ifelse(balance <0, "below zero", if
 
 Portdata <- Portdata %>% mutate(day_group = ifelse(between(day,1,10),"Early Month", ifelse(between(day,11,20),"Mid Month", "Month End")))
 
-Portdata <- Portdata %>% mutate(Duration_group = ifelse(between(duration,0,mean(duration)),"Less Duration", ifelse(between(duration,mean(duration),1000),"Good Duration", "High Duration" )))
+Portdata <- Portdata %>% mutate(Duration_group = ifelse(between(duration,0,mean(duration)),"Less Duration", ifelse(between(duration,mean(duration),750),"Good Duration", ifelse(between(duration, 750, 1500),"High Duration", "Very High Duration" ))))
+
+
+Portdata <- Portdata %>% mutate(Campaign_group = ifelse(between(campaign,1,mean(campaign)),"Lean Campaign", ifelse(between(duration,mean(campaign),10),"Average Campaign", ifelse(between(duration, 10, 20),"Ample Campaign", "Heavy Campaign" ))))
+
+Portdata <- Portdata %>% mutate(pdays_group = ifelse(between(pdays,-1,mean(pdays)), "Less gap Pdays", ifelse( between(pdays,mean(pdays), 100),"Medium gap Pdays", "Large gap Pdays")))
+
+Portdata <- Portdata %>% mutate(previous_group = ifelse(between(previous, )))
+
 #Summary on dataset
 summary(Portdata)
 
@@ -39,9 +47,11 @@ str(Portdata)
 
 head(Portdata)
 
-mean(Portdata$duration)
+max(Portdata$pdays)
 
-Portdata %>% group_by(Duration_group,y) %>% filter (duration > 800) %>% summarise(n())
+Portdata %>% group_by(pdays_group,y) %>% summarise(n()) 
+#%>% filter (duration > 700) 
+
 
 # Validation set will be 10% of MovieLens data
 set.seed(1, sample.kind="Rounding")
@@ -72,6 +82,8 @@ data.frame(Portdata %>% group_by(contact,y) %>% summarise(count = n()))
 
 data.frame(Portdata %>% group_by(day,y) %>% summarise(count = n()))
 
+
+data.frame(Portdata %>% group_by(campaign,y) %>% summarise(count = n()))
 
 glm_fit <- train_set %>% 
   mutate(y = as.numeric(sex == "Female")) %>%
