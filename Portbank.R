@@ -19,11 +19,29 @@ install.packages("rattle")
 library(rattle)
 library(rpart.plot)
 library(RColorBrewer)
-
-
+library(descr)
+library(randomForest)
 
 Portdata <- read_delim("bank-full.csv", 
                          ";", escape_double = FALSE, trim_ws = TRUE)
+## Duplicate row check
+sum(duplicated(Portdata))
+
+## Missing data check
+sum(!complete.cases(Portdata))
+
+all.empty = rowSums(is.na(Portdata))==ncol(Portdata)
+sum(all.empty)
+
+Portdata.clean = Portdata[!all.empty,]
+
+Portdata.clean = Portdata.clean %>% distinct
+
+nrow(Portdata.clean)
+
+Portdata.clean$missing = !complete.cases(Portdata.clean)
+
+sum(is.na(Portdata))
 
 Portdata <- as.data.frame(Portdata)
 
@@ -38,8 +56,23 @@ Portdata <- Portdata %>% mutate(Campaign_group = ifelse(between(campaign,1,mean(
 
 Portdata <- Portdata %>% mutate(pdays_group = ifelse(between(pdays,-1,mean(pdays)), "Less gap Pdays", ifelse( between(pdays,mean(pdays), 100),"Medium gap Pdays", "Large gap Pdays")))
 
-Portdata <- Portdata %>% mutate(previous_group = ifelse(between(previous, )))
+Portdata <- Portdata %>% mutate(previous_group = ifelse(previous == 0, "Zero", ifelse(previous==1, "One", "More than once")))
 
+Portdata <- Portdata %>% mutate(y_output = ifelse(y == "no", 0, 1))
+
+Portdata <- Portdata %>% mutate(y_output = as.factor(y_output))
+
+Portdata <- Portdata %>% select(-balance,-day,-duration,-campaign,-pdays,-previous,-y)
+
+Portdata <- Portdata %>% mutate(Cust_group = as.factor(Cust_group),
+                                day_group = as.factor(day_group),
+                                Duration_group = as.factor(Duration_group),
+                                Campaign_group = as.factor(Campaign_group),
+                                previous_group = as.factor(previous_group),
+                                Duration_group = as.factor(Duration_group),
+                                y_output = as.factor(y_output) )
+
+nlevels(Portdata$day_group)
 #Summary on dataset
 summary(Portdata)
 
@@ -47,50 +80,79 @@ str(Portdata)
 
 head(Portdata)
 
-max(Portdata$pdays)
+mean(Portdata$previous)
 
-Portdata %>% group_by(pdays_group,y) %>% summarise(n()) 
+Portdata %>% group_by(poutcome,y) %>% summarise(n()) 
 #%>% filter (duration > 700) 
 
 
 # Validation set will be 10% of MovieLens data
 set.seed(1, sample.kind="Rounding")
 # if using R 3.5 or earlier, use `set.seed(1)` instead
-test_index <- createDataPartition(y = Portdata$y, times = 1, p = 0.1, list = FALSE)
-Portdata_main <- Portdata[-test_index,]
-Portdata_validation <- Portdata[test_index,]
+Valid_index <- createDataPartition(y = Portdata$y, times = 1, p = 0.1, list = FALSE)
+Portdata_main <- Portdata[-Valid_index,]
+Portdata_validation <- Portdata[Valid_index,]
 
 
+set.seed(2, sample.kind="Rounding")
+# if using R 3.5 or earlier, use `set.seed(1)` instead
+test_index <- createDataPartition(y = Portdata_main$y, times = 1, p = 0.2, list = FALSE)
+Portdata_main_train <- Portdata_main[-test_index,]
+Portdata_main_test <- Portdata_main[test_index,]
 
-data.frame(bank_additional_full %>% group_by(y) %>% summarise(count = n()))
-
-data.frame(bank_additional_full %>% group_by(job,y) %>% summarise(count = n()))
-
-data.frame(bank_additional_full %>% group_by(marital,y) %>% summarise(count = n()))
-
-data.frame(bank_additional_full %>% group_by(education,y) %>% summarise(count = n()))
-
-data.frame(bank_additional_full %>% group_by(default,y) %>% summarise(count = n()))
-
-data.frame(bank_additional_full %>% group_by(housing,y) %>% summarise(count = n()))
-
-data.frame(bank_additional_full %>% group_by(loan,y) %>% summarise(count = n()))
-
-data.frame(Portdata %>% group_by(loan,y) %>% summarise(count = n()))
-
-data.frame(Portdata %>% group_by(contact,y) %>% summarise(count = n()))
-
-data.frame(Portdata %>% group_by(day,y) %>% summarise(count = n()))
+summary(Portdata_main_train)
 
 
-data.frame(Portdata %>% group_by(campaign,y) %>% summarise(count = n()))
+##GLM:
 
-glm_fit <- train_set %>% 
-  mutate(y = as.numeric(sex == "Female")) %>%
-  glm(y ~ height, data=., family = "binomial")
-p_hat_logit <- predict(glm_fit, newdata = test_set, type = "response")
-y_hat_logit <- ifelse(p_hat_logit > 0.5, "Female", "Male") %>% factor
-confusionMatrix(y_hat_logit, test_set$sex)$overall[["Accuracy"]]
+glm_fit <- Portdata_main_train %>% 
+    glm(y_output ~ ., data=., family = binomial(link='logit'))
+p_hat_logit <- predict(glm_fit, newdata = Portdata_main_test, type = "response") 
+y_hat_logit <- ifelse(p_hat_logit > 0.3,1, 0) %>% factor
+confusionMatrix(y_hat_logit, Portdata_main_test$y_output)
+#$overall[["Accuracy"]]
+
+##RPART
+model_rpart = rpart(formula = y_output ~ .,
+                   data = Portdata_main_train, method = "class")
+
+# plot
+#prp(model_rpart, type = 2, extra = 104, fallen.leaves = TRUE, main="Decision Tree")
+
+p_hat_logit <- predict(model_rpart, newdata = Portdata_main_test, type = "class") 
+y_hat_logit <- ifelse(p_hat_logit > 0.5,1, 0) %>% factor
+confusionMatrix(p_hat_logit, Portdata_main_test$y_output)
+
+fancyRpartPlot(model_rpart , digits=2 , palettes = c("Purples", "Oranges"))
+
+##Knn
+
+model_knn <- train(y_output ~ ., data = Portdata_main_train, method = "knn", 
+                  maximize = TRUE,
+                  trControl = trainControl(method = "cv", number = 10),
+                  preProcess=c("center", "scale"))
+
+pred_kNN <- predict(model_knn , Portdata_main_test)
+confusionMatrix(pred_kNN , Portdata_main_test$y_output)
+
+### Cross table validation for KNN
+CrossTable(Portdata_main_test$y_output, pred_kNN,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+##Randomforest
+
+model_rf = randomForest(y_output ~ .,
+                    data = Portdata_main_train)
+
+pred_rf <- predict(model_rf, newdata = Portdata_main_test, type = "class") 
+
+confusionMatrix(pred_rf, Portdata_main_test$y_output)
+
+plot(model_rf, margin = 0.1)
+text(model_rf, cex = 0.75)
+
+
 
 library(caret)
 train_glm <- train(y ~ ., method = "glm", data = mnist_27$train)
@@ -103,16 +165,16 @@ confusionMatrix(y_hat_glm, mnist_27$test$y)$overall[["Accuracy"]]
 confusionMatrix(y_hat_knn, mnist_27$test$y)$overall[["Accuracy"]]
 
 
-models <- c("glm", "lda", "naive_bayes", "svmLinear", "knn", "gamLoess", "multinom", "qda", "rf", "adaboost")
+models <- c("glm", "lda", "knn",  "qda", "rf")
 
-library(caret)
-library(dslabs)
-set.seed(1) # use `set.seed(1, sample.kind = "Rounding")` in R 3.6 or later
-data("mnist_27")
+# library(caret)
+# library(dslabs)
+# set.seed(1) # use `set.seed(1, sample.kind = "Rounding")` in R 3.6 or later
+# data("mnist_27")
 
 fits <- lapply(models, function(model){ 
   print(model)
-  train(y ~ ., method = model, data = mnist_27$train)
+  train(y_output ~ ., method = model, data = Portdata_main_train)
 }) 
 
 names(fits) <- models
