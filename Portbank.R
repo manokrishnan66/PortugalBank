@@ -5,18 +5,7 @@ library(ggplot2)
 library(tidyverse)
 library(lubridate)
 library(caret)
-install.packages("CaretEnsemble")
-library(caretEnsemble)
-install.packages("SMOTE")
-library(SMOTE)
-install.packages("ROSE")
-library(ROSE)
-library(mlbench)
-install.packages("DMwR")
-library(DMwR)
 library(rpart)
-install.packages("rattle")
-library(rattle)
 library(rpart.plot)
 library(RColorBrewer)
 library(descr)
@@ -43,7 +32,11 @@ Portdata.clean$missing = !complete.cases(Portdata.clean)
 
 sum(is.na(Portdata))
 
+
+
 Portdata <- as.data.frame(Portdata)
+
+Portdata <- Portdata %>% mutate(Age_group = ifelse(age < 21, "Below 20", ifelse(between(age, 21,40), "Between 21 and 40", ifelse(between(age,41,60), "Between 41 and 60", "Above 61"))))
 
 Portdata <- Portdata %>% mutate(Cust_group = ifelse(balance <0, "below zero", ifelse(between(balance,1,mean(balance)),"below average", ifelse(between(balance,mean(balance),50000), "Above average", "HNI" ))))
 
@@ -62,9 +55,10 @@ Portdata <- Portdata %>% mutate(y_output = ifelse(y == "no", 0, 1))
 
 Portdata <- Portdata %>% mutate(y_output = as.factor(y_output))
 
-Portdata <- Portdata %>% select(-balance,-day,-duration,-campaign,-pdays,-previous,-y)
+Portdata <- Portdata %>% select(-age,-balance,-day,-duration,-campaign,-pdays,-previous,-y)
 
-Portdata <- Portdata %>% mutate(Cust_group = as.factor(Cust_group),
+Portdata <- Portdata %>% mutate(Age_group = as.factor(Age_group),
+                                Cust_group = as.factor(Cust_group),
                                 day_group = as.factor(day_group),
                                 Duration_group = as.factor(Duration_group),
                                 Campaign_group = as.factor(Campaign_group),
@@ -72,7 +66,7 @@ Portdata <- Portdata %>% mutate(Cust_group = as.factor(Cust_group),
                                 Duration_group = as.factor(Duration_group),
                                 y_output = as.factor(y_output) )
 
-nlevels(Portdata$day_group)
+levels(Portdata$day_group)
 #Summary on dataset
 summary(Portdata)
 
@@ -84,6 +78,225 @@ mean(Portdata$previous)
 
 Portdata %>% group_by(poutcome,y) %>% summarise(n()) 
 #%>% filter (duration > 700) 
+Age - categ
+Month - Categ
+Poutcome - Categ
+Duration group - Categ
+pdays_group categ
+
+# Data Exploration
+
+### Age - categ
+
+Age_count <- data.frame(Portdata %>% group_by(Age_group, y_output) %>% summarise(Count = n()))
+
+Age_count <- Age_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Age_count %>% knitr::kable()
+
+Portdata %>% ggplot(aes(Age_group, color = y_output)) + 
+  geom_bar() + 
+  labs(title = "Term Deposits Yes/No by Age Count", x="age", y="Count of Output") +
+  facet_wrap(y_output ~ .) +
+  coord_flip()
+
+theme_set(theme_bw())  # pre-set the bw theme.
+g <- Portdata %>% ggplot( aes(y_output, Age_group)) + 
+  labs(subtitle="Term deposit output vs Age Group",
+       Y="Age Group", x="Count of Output")
+
+g + geom_jitter(aes(col=Age_group)) + 
+  geom_smooth(aes(col=Age_group), method="lm", se=F)
+
+### Job
+
+job_count <- data.frame(Portdata %>% group_by(job,y_output) %>% summarise(Count = n()))
+
+job_count <- job_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+job_count %>% knitr::kable()
+
+## Marital status
+
+Marital_count <- data.frame(Portdata %>% group_by(marital,y_output) %>% summarise(Count = n()))
+
+Marital_count <- Marital_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Marital_count %>% knitr::kable()
+
+Portdata %>% ggplot(aes(marital, fill = y_output)) + 
+  geom_bar() + 
+  labs(title = "Term Deposits Yes/No by Marital status", x="Marital status", y="Count of Output") +
+  facet_wrap(y_output ~ .) +
+  coord_flip()
+
+## Education
+
+Education_count <- data.frame(Portdata %>% group_by(education,y_output) %>% summarise(Count = n()))
+
+Education_count <- Education_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Education_count %>% knitr::kable()
+
+## Default
+
+Default_count <- data.frame(Portdata %>% group_by(default,y_output) %>% summarise(Count = n()))
+
+Default_count <- Default_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Default_count %>% knitr::kable()
+
+## Housing
+
+Housing_count <- data.frame(Portdata %>% group_by(housing,y_output) %>% summarise(Count = n()))
+
+Housing_count <- Housing_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Housing_count %>% knitr::kable()
+
+## Loan
+
+Loan_count <- data.frame(Portdata %>% group_by(loan,y_output) %>% summarise(Count = n()))
+
+Loan_count <- Loan_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Loan_count %>% knitr::kable()
+
+Portdata %>% ggplot(aes(loan, fill = y_output)) + 
+  geom_bar() + 
+  labs(title = "Term Deposits Yes/No by Loan count", x="Loan count", y="Count of Output") +
+  facet_wrap(y_output ~ .) +
+  coord_flip()
+
+## Contact
+
+Contact_count <- data.frame(Portdata %>% group_by(contact,y_output) %>% summarise(Count = n()))
+
+Contact_count <- Contact_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Contact_count %>% knitr::kable()
+
+Portdata %>% ggplot(aes(contact, y_output, color = contact)) + 
+  geom_jitter()
+
+## Month - Categ
+
+Month_count <- data.frame(Portdata %>% group_by(month,y_output) %>% summarise(Count = n()))
+
+Month_count <- Month_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Month_count %>% knitr::kable()
+
+
+Portdata %>% ggplot(aes(month, fill = y_output)) + 
+  geom_bar() + 
+  labs(title = "Term Deposits Yes/No by contacted month", x="Contacted month", y="Count of Output") +
+  facet_wrap(y_output ~ .) +
+  coord_flip()
+
+
+# Poutcome - Categ
+
+Pout_count <- data.frame(Portdata %>% group_by(poutcome,y_output) %>% summarise(Count = n()))
+
+Pout_count <- Pout_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Pout_count %>% knitr::kable()
+
+
+Portdata %>% ggplot(aes(poutcome, fill = y_output)) + 
+  geom_bar() + 
+  labs(title = "Term Deposits Yes/No by previous campaign outcome", x="Previous campaign outcome", y="Count of Output") +
+  facet_wrap(y_output ~ .) +
+  coord_flip()
+
+## Customer Group
+
+Cust_count <- data.frame(Portdata %>% group_by(Cust_group,y_output) %>% summarise(Count = n()))
+
+Cust_count <- Cust_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Cust_count %>% knitr::kable()
+
+Portdata %>% ggplot(aes(Cust_group, y_output, color = Cust_group)) + 
+  geom_jitter()
+
+## day_group
+
+Day_count <- data.frame(Portdata %>% group_by(day_group,y_output) %>% summarise(Count = n()))
+
+Day_count <- Day_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Day_count %>% knitr::kable()
+
+Portdata %>% ggplot(aes(day_group, fill = y_output)) + 
+  geom_bar() + 
+  labs(title = "Term Deposits Yes/No by campaign period", x="Previous campaign period", y="Count of Output") +
+  facet_wrap(y_output ~ .) +
+  coord_flip()
+
+## Duration group - Categ
+
+Duration_count <- data.frame(Portdata %>% group_by(Duration_group,y_output) %>% summarise(Count = n()))
+
+Duration_count <- Duration_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Duration_count %>% knitr::kable()
+
+Portdata %>% ggplot(aes(Duration_group, y_output, color = Duration_group)) + 
+  geom_jitter()
+
+## Campaign_group
+
+Campaign_count <- data.frame(Portdata %>% group_by(Campaign_group,y_output) %>% summarise(Count = n()))
+
+Campaign_count <- Campaign_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Campaign_count %>% knitr::kable()
+
+## pdays_group categ
+
+pdays_count <- data.frame(Portdata %>% group_by(pdays_group,y_output) %>% summarise(Count = n()))
+
+pdays_count <- pdays_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+pdays_count %>% knitr::kable()
+
+
+Portdata %>% ggplot(aes(pdays_group, fill = y_output)) + 
+  geom_bar() + 
+  labs(title = "Term Deposits Yes/No by previous contact gap", x="Previous contact gap", y="Count of Output") +
+  facet_wrap(y_output ~ .) +
+  coord_flip()
+
+## previous_group
+
+
+previous_count <- data.frame(Portdata %>% group_by(previous_group,y_output) %>% summarise(Count = n()))
+
+previous_count <- previous_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+previous_count %>% knitr::kable()
+
+
+Portdata %>% ggplot(aes(previous_group, y_output, color = previous_group)) + 
+  geom_jitter()
 
 
 # Validation set will be 10% of MovieLens data
