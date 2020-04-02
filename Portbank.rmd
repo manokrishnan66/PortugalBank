@@ -1,0 +1,15 @@
+---
+title: "HarvardX: PH125.9x Data Science  \n   Portugal Banking term loan prediction"
+author: "Mano Krishnan"
+date: "02/04/2020"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+---
+\pagebreak
+
+# Introduction
+
+The Bank marketing dataset has 41188 examples with 20 inputs and 1 output variable. This data is from Portuguese Banking institution. It has numerical as well as categorical attributes and response attribute y denotes client subscribed to term deposit or not (yes or no). The goal is to build models that can predict if client will subscribe to term deposit or not. Since response variable is binary, different classification models will be used incrementally till it gives model with best accuracy. 
