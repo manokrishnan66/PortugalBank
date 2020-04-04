@@ -12,4 +12,464 @@ output:
 
 # Introduction
 
-The Bank marketing dataset has 41188 examples with 20 inputs and 1 output variable. This data is from Portuguese Banking institution. It has numerical as well as categorical attributes and response attribute y denotes client subscribed to term deposit or not (yes or no). The goal is to build models that can predict if client will subscribe to term deposit or not. Since response variable is binary, different classification models will be used incrementally till it gives model with best accuracy. 
+We chose Bank Marketing Data set for the final project on Data science. This is Portuguese Banking institutional data. It has many attributes including client subscribed to term deposit or not. The aim is to build models that can predict if client will subscribe to term deposit or not.
+
+
+## Dataset and Data Loading
+
+This dataset is download from UCI Machi Learning Repository. This is related to direct marketing campaigns of the Portuguese Banking institution. This dataset is available at http://archive.ics.uci.edu/ml/datasets/Bank+Marketing. There were 4 datasets in it from which bank-full.csv is used that has all examples (45211) and 17 inputs ordered by date. There are 16 input variables and 1 output variable (desired target).
+
+This had different categories of client data like job, age, marital, education, default, housing, loan, contact, month, balance, day_of_week, duration, campaign, pdays, previous, poutcome and one output variable y that denotes if client subscribed to term deposit or not. These data denote telemarketing data, customer data and some other data. Here, many attributes are numerical and some are categorical. We loaded the dataset in the R studio and checked for any missing values using is.na fucntion and found not missing data. Hence, we have clean data.
+
+### Libraries
+
+The following libraries were used in this report:
+```{r libs, warning=FALSE, error=FALSE, message=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(lubridate)
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(RColorBrewer)
+library(rattle)
+library(descr)
+library(randomForest)
+```
+
+### Dataset loading
+
+```{r data_load, warning=FALSE, error=FALSE, message=FALSE}
+Portdata <- read_delim("bank-full.csv", 
+                         ";", escape_double = FALSE, trim_ws = TRUE)
+## Duplicate row check
+sum(duplicated(Portdata))
+
+## Missing data check
+sum(!complete.cases(Portdata))
+
+all.empty = rowSums(is.na(Portdata))==ncol(Portdata)
+sum(all.empty)
+
+Portdata.clean = Portdata[!all.empty,]
+
+Portdata.clean = Portdata.clean %>% distinct
+
+nrow(Portdata.clean)
+
+Portdata.clean$missing = !complete.cases(Portdata.clean)
+
+sum(is.na(Portdata))
+
+```
+### Attribute Information: 
+1. age – Client Age- (numeric) 
+2. job – Type of Job - (categorical) ('admin.','blue-collar','entrepreneur','housemaid','management',
+'retired','selfemployed','services',
+'student','technician','unemployed','unknown') 
+3. marital - Client’s marital status - (categorical) (divorced, married, single, unknown, note: divorced means divorced or widowed) 
+4. education - Client’s education - (categorical) (basic.4y, basic.6y, basic.9y, high.school, illiterate, professional.course, university.degree, unknown) 
+5. default - has credit in default? - (categorical) (no, yes, unknown) 
+6. housing - Has housing loan? - (categorical) (no, yes, unknown) 
+7. loan - has personal loan? - (categorical) (no, yes, unknown’) 
+8. contact – last contact month of year - (categorical) (cellular, telephone) 
+9. month - Month of last contact with client - (categorical) (January - December) 
+10. day - last contact day of the month - (categorical) (1-31) 
+11. duration - last contact duration, in seconds (numeric). Important note: this attribute highly affects the output target (e.g., if duration=0 then y='no').  
+12. campaign: number of contacts performed during this campaign and for this client (numeric)  
+13. pdays - number of days that passed by after the client was last contacted from a previous campaign (numeric; 999 means clients were not previously contacted)  
+14. previous - Number of client contacts performed before this campaign - (numeric) 
+15. poutcome - outcome of the previous marketing campaign - (categorical) (failure, nonexistent, success) 
+16. balance - balance of the saving account - (numeric)
+
+Output variable (desired target) –  
+17. Term Deposit - has the client subscribed a term deposit?  - (binary: ‘yes’,‘no’) 
+
+### Aim & Objectives
+
+The provided dataset will be divided into training set and validation set. We are training the first set with the machine learning algorithms and to predict subscription of term deposit by the client.
+
+Data visualization and data exploration is used to find the interesting trends and the factors affecting the term deposit subscription by the client. We are creating many models based on their resulting accuracy and other attributes and finalizing the optimal model to client's subscription.  
+
+# Methodology & Analysis
+## Data Pre-processing
+
+For the better analysis, we have mutated many attributes based on the logical segregation. The below mentioned attributes are mutated.
+
+1. Age_group - Grouped age data into 4 categories. 
+
+If age is less than 21, we consider it as 'Below 20' group. 
+If age is between 21 and 40, we consider it as 'Between 21 and 40' group. 
+If age is between 41 and 60, we consider it as 'Between 41 and 60' group. 
+If age is greater than 60, we consider it as 'Above 61' group.
+
+2. Cust_group - Grouped balance data into 4 categories
+
+If balance is less than 0, we consider it as 'Below zero' group. 
+If balance is between 1 and mean of the total balance amount , we consider it as 'below average' group. 
+If balance is between mean of the total balance amount and 50000 , we consider it as 'Above average' group.
+If balance is greater than 50000, we consider it as 'HNI' group. 
+
+3. day_group - Grouped day data into 4 categories
+
+If day is between 1 and 10 , we consider it as 'Early Month' group. If day is between 11 and 20 , we consider it as 'Mid month' group.
+If day is between 21 and 31, we consider it as 'Month end' group. 
+
+4. Duration_group - Grouped duration data into 4 categories
+
+If duration is between 1 and mean of the duration , we consider it as 'Less Duration' group. 
+If duration is between mean of the duration and 750 , we consider it as 'Good Duration' group.
+If duration is between 750 and 1500, we consider it as 'High Duration' group. 
+If duration is above 1500, we consider it as 'Very High Duration' group. 
+
+5. Campaign_group - Grouped campaign data into 4 categories
+
+If campaign is between 1 and mean of the campaign , we consider it as 'Average Campaign' group. 
+If campaign is between mean of the campaign and 10, we consider it as 'Average Campaign' group.
+If campaign is between 10 and 20, we consider it as 'Ample Campaign' group. 
+If campaign is above 20, we consider it as 'Heavy Campaign' group.
+
+6. pdays_group - Grouped pdays data into 4 categories
+
+If pdays is between -1 and mean of the pdays , we consider it as 'Less gap Pdays' group. 
+If pdays is between mean of the pdays and 100, we consider it as 'Medium gap Pdays' group.
+If pdays is greater 100, we consider it as 'Large gap Pdays' group. 
+7. previous_group - Grouped previous data into 4 categories
+
+If previous is 0 , we consider it as 'Zero' group. 
+If previous is 1, we consider it as 'One' group.
+If previous is more than 1, we consider it as 'More than once' group.
+
+8. y-output is "no", then 0 and if it is "yes", then 1.
+
+``````{r Pre-processing, warning=FALSE, error=FALSE, message=FALSE}
+Portdata <- as.data.frame(Portdata)
+
+Portdata <- Portdata %>% mutate(Age_group = ifelse(age < 21,
+            "Below 20", ifelse(between(age, 21,40), 
+            "Between 21 and 40", ifelse(between(age,41,60),        
+            "Between 41 and 60", "Above 61"))))
+
+Portdata <- Portdata %>% mutate(Cust_group = ifelse(balance <0, 
+            "below zero", ifelse(between(balance,1,mean(balance)),
+            "below average",     
+            ifelse(between(balance,mean(balance),50000), 
+            "Above average", "HNI" ))))
+
+Portdata <- Portdata %>% mutate(day_group =  
+            ifelse(between(day,1,10),"Early Month", 
+            ifelse(between(day,11,20),"Mid Month", "Month End")))
+
+Portdata <- Portdata %>% mutate(Duration_group = 
+            ifelse(between(duration,0,mean(duration)),"Less 
+            Duration", ifelse(between(duration,mean(duration),750),
+            "Good Duration", ifelse(between(duration, 750, 1500),
+            "High Duration", "Very High Duration" ))))
+
+
+Portdata <- Portdata %>% mutate(Campaign_group = 
+            ifelse(between(campaign,1,mean(campaign)),
+            "Lean Campaign", ifelse(between(campaign,
+            mean(campaign),10),"Average Campaign", 
+            ifelse(between(campaign, 10, 20),
+            "Ample Campaign", "Heavy Campaign" ))))
+
+Portdata <- Portdata %>% mutate(pdays_group = 
+            ifelse(between(pdays,-1,mean(pdays)), "Less gap 
+            Pdays", ifelse( between(pdays,mean(pdays), 100),
+            "Medium gap Pdays", "Large gap Pdays")))
+
+Portdata <- Portdata %>% mutate(previous_group = 
+            ifelse(previous == 0, "Zero", ifelse(previous==1, 
+            "One", "More than once")))
+
+Portdata <- Portdata %>% mutate(y_output = ifelse(y == "no", 0, 1))
+
+Portdata <- Portdata %>% mutate(y_output = as.factor(y_output))
+
+Portdata <- Portdata %>% select(-age,-balance,-day,-duration,-campaign,-pdays,-previous,-y)
+
+Portdata <- Portdata %>% mutate(Age_group = as.factor(Age_group),
+                                Cust_group = as.factor(Cust_group),
+                                day_group = as.factor(day_group),
+                                Duration_group = as.factor(Duration_group),
+                                Campaign_group = as.factor(Campaign_group),
+                                previous_group = as.factor(previous_group),
+                                Duration_group = as.factor(Duration_group),
+                                y_output = as.factor(y_output) )
+
+
+Portdata=Portdata %>% mutate_if(is.character, as.factor)
+
+```
+
+## Data Visualization and Data Exploration
+
+### General Data Information
+
+```{r General_data_info}
+# The few rows of the Portdata are presented below:
+head(Portdata) 
+
+# Summary Statistics of edx
+summary(Portdata)
+```
+
+## Data exploration
+
+Each attribute of the dataset has been explored properly by comparing the count of the y_output.
+
+```{r data_exploration}
+### Age - categ
+  
+Age_count <- data.frame(Portdata %>% group_by(Age_group, y_output) %>% summarise(Count = n()))
+
+Age_count <- Age_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% mutate(Percent_of_yes = Yes /(Yes + No)) %>% 
+arrange(desc(Percent_of_yes))  
+
+Age_count %>% knitr::kable()
+
+Portdata %>% ggplot(aes(Age_group, color = y_output)) + 
+  geom_bar() + 
+  labs(title = "Term Deposits Yes/No by Age Count", x="age", 
+  y="Count of Output") +
+  facet_wrap(y_output ~ .) +
+  coord_flip()
+
+theme_set(theme_bw())  # pre-set the bw theme.
+g <- Portdata %>% ggplot( aes(y_output, Age_group)) + 
+labs(subtitle="Term deposit output vs Age Group",
+Y="Age Group", x="Count of Output")
+
+g + geom_jitter(aes(col=Age_group)) + 
+  geom_smooth(aes(col=Age_group), method="lm", se=F)
+
+### Job
+
+job_count <- data.frame(Portdata %>% group_by(job,y_output) %>% summarise(Count = n()))
+
+job_count <- job_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+job_count %>% knitr::kable()
+
+## Marital status
+
+Marital_count <- data.frame(Portdata %>% group_by(marital,y_output) %>% summarise(Count = n()))
+
+Marital_count <- Marital_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Marital_count %>% knitr::kable()
+
+Portdata %>% ggplot(aes(marital, fill = y_output)) + 
+  geom_bar() + 
+  labs(title = "Term Deposits Yes/No by Marital status", x="Marital status", y="Count of Output") +
+  facet_wrap(y_output ~ .) +
+  coord_flip()
+
+## Education
+
+Education_count <- data.frame(Portdata %>% group_by(education,y_output) %>% summarise(Count = n()))
+
+Education_count <- Education_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Education_count %>% knitr::kable()
+
+## Default
+
+Default_count <- data.frame(Portdata %>% group_by(default,y_output) %>% summarise(Count = n()))
+
+Default_count <- Default_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Default_count %>% knitr::kable()
+
+## Housing
+
+Housing_count <- data.frame(Portdata %>% group_by(housing,y_output) %>% summarise(Count = n()))
+
+Housing_count <- Housing_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Housing_count %>% knitr::kable()
+
+## Loan
+
+Loan_count <- data.frame(Portdata %>% group_by(loan,y_output) %>% summarise(Count = n()))
+
+Loan_count <- Loan_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Loan_count %>% knitr::kable()
+
+Portdata %>% ggplot(aes(loan, fill = y_output)) + 
+  geom_bar() + 
+  labs(title = "Term Deposits Yes/No by Loan count", x="Loan count", y="Count of Output") +
+  facet_wrap(y_output ~ .) +
+  coord_flip()
+
+## Contact
+
+Contact_count <- data.frame(Portdata %>% group_by(contact,y_output) %>% summarise(Count = n()))
+
+Contact_count <- Contact_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Contact_count %>% knitr::kable()
+
+Portdata %>% ggplot(aes(contact, y_output, color = contact)) + 
+  geom_jitter()
+
+## Month - Categ
+
+Month_count <- data.frame(Portdata %>% group_by(month,y_output) %>% summarise(Count = n()))
+
+Month_count <- Month_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Month_count %>% knitr::kable()
+
+
+Portdata %>% ggplot(aes(month, fill = y_output)) + 
+  geom_bar() + 
+  labs(title = "Term Deposits Yes/No by contacted month", x="Contacted month", y="Count of Output") +
+  facet_wrap(y_output ~ .) +
+  coord_flip()
+
+
+# Poutcome - Categ
+
+Pout_count <- data.frame(Portdata %>% group_by(poutcome,y_output) %>% summarise(Count = n()))
+
+Pout_count <- Pout_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Pout_count %>% knitr::kable()
+
+
+Portdata %>% ggplot(aes(poutcome, fill = y_output)) + 
+  geom_bar() + 
+  labs(title = "Term Deposits Yes/No by previous campaign outcome", x="Previous campaign outcome", y="Count of Output") +
+  facet_wrap(y_output ~ .) +
+  coord_flip()
+
+## Customer Group
+
+Cust_count <- data.frame(Portdata %>% group_by(Cust_group,y_output) %>% summarise(Count = n()))
+
+Cust_count <- Cust_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Cust_count %>% knitr::kable()
+
+Portdata %>% ggplot(aes(Cust_group, y_output, color = Cust_group)) + 
+  geom_jitter()
+
+## day_group
+
+Day_count <- data.frame(Portdata %>% group_by(day_group,y_output) %>% summarise(Count = n()))
+
+Day_count <- Day_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Day_count %>% knitr::kable()
+
+Portdata %>% ggplot(aes(day_group, fill = y_output)) + 
+  geom_bar() + 
+  labs(title = "Term Deposits Yes/No by campaign period", x="Previous campaign period", y="Count of Output") +
+  facet_wrap(y_output ~ .) +
+  coord_flip()
+
+## Duration group - Categ
+
+Duration_count <- data.frame(Portdata %>% group_by(Duration_group,y_output) %>% summarise(Count = n()))
+
+Duration_count <- Duration_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Duration_count %>% knitr::kable()
+
+Portdata %>% ggplot(aes(Duration_group, y_output, color = Duration_group)) + 
+  geom_jitter()
+
+## Campaign_group
+
+Campaign_count <- data.frame(Portdata %>% group_by(Campaign_group,y_output) %>% summarise(Count = n()))
+
+Campaign_count <- Campaign_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+Campaign_count %>% knitr::kable()
+
+## pdays_group categ
+
+pdays_count <- data.frame(Portdata %>% group_by(pdays_group,y_output) %>% summarise(Count = n()))
+
+pdays_count <- pdays_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+pdays_count %>% knitr::kable()
+
+
+Portdata %>% ggplot(aes(pdays_group, fill = y_output)) + 
+  geom_bar() + 
+  labs(title = "Term Deposits Yes/No by previous contact gap", x="Previous contact gap", y="Count of Output") +
+  facet_wrap(y_output ~ .) +
+  coord_flip()
+
+## previous_group
+
+
+previous_count <- data.frame(Portdata %>% group_by(previous_group,y_output) %>% summarise(Count = n()))
+
+previous_count <- previous_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% 
+  mutate(Percent_of_yes = Yes /(Yes + No)) %>% arrange(desc(Percent_of_yes))  
+
+previous_count %>% knitr::kable()
+
+
+Portdata %>% ggplot(aes(previous_group, y_output, color = previous_group)) + 
+  geom_jitter()
+
+```
+
+Based on the above exploration, we can understand that some of the attributes contributes more to the clients subscription decision. We have mentioned below the list of attributes in the order of high impact.
+
+1. Duration_group -  last contact duration
+2. Month - Month of last contact with client 
+3. Poutcome - outcome of the previous marketing campaign 
+4. Age_group - Client Age
+5. pdays_group - number of days that passed by after the client was last contacted from a previous campaign 
+
+### Splitting of dataset
+
+We had partitioned the banking dataset into 2 sets[main dataset and validation dataset]. The main datset is further splitted into train and test dataset. We are training the dataset with the train set and testing with the test dataset. Finally, we implemented the model in the validation dataset. 
+
+One set is used for building the algorithm and the second set are used for the validation of the model. The 10% of the movielens data represents the validation set.
+
+
+```{r Split_data}
+
+# Validation set will be 10% of bank marketing data
+set.seed(1, sample.kind="Rounding")
+# if using R 3.5 or earlier, use `set.seed(1)` instead
+Valid_index <- createDataPartition(y = Portdata$y, times = 1, p = 0.1, list = FALSE)
+Portdata_main <- Portdata[-Valid_index,]
+Portdata_validation <- Portdata[Valid_index,]
+
+# Splitting Portdata_main into 2 sets for initial testing
+set.seed(2, sample.kind="Rounding")
+# if using R 3.5 or earlier, use `set.seed(1)` instead
+test_index <- createDataPartition(y = Portdata_main$y, times = 1, p = 0.2, list = FALSE)
+Portdata_main_train <- Portdata_main[-test_index,]
+Portdata_main_test <- Portdata_main[test_index,]
+```
+
+
+## Data Analysis and modelling
+
+GLM:
+
+Logistic regression is useful when you are predicting a binary outcome from a set of continuous predictor variables. It is frequently preferred over discriminant function analysis because of its less restrictive assumptions.
