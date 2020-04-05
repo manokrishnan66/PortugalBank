@@ -470,6 +470,78 @@ Portdata_main_test <- Portdata_main[test_index,]
 
 ## Data Analysis and modelling
 
-GLM:
+### GLM:
 
 Logistic regression is useful when you are predicting a binary outcome from a set of continuous predictor variables. It is frequently preferred over discriminant function analysis because of its less restrictive assumptions.
+
+```{r GLM_data}
+
+glm_fit <- Portdata_main_train %>% 
+    glm(y_output ~ ., data=., family = binomial(link='logit'))
+p_hat_logit <- predict(glm_fit, newdata = Portdata_main_test, type = "response") 
+y_hat_logit <- ifelse(p_hat_logit > 0.25,1, 0) %>% factor
+conf_glm <- confusionMatrix(y_hat_logit, Portdata_main_test$y_output)
+#$overall[["Accuracy"]]
+accuracy_glm = conf_glm$overall[["Accuracy"]]
+Sensitivity_glm = conf_glm$byClass[["Sensitivity"]]
+Specificity_glm = conf_glm$byClass[["Specificity"]]
+Precision_glm = conf_glm$byClass[["Precision"]]
+F1_glm = conf_glm$byClass[["F1"]]
+
+### Cross table validation for KNN
+CrossTable(Portdata_main_test$y_output, y_hat_logit,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+Confusion_table <- data_frame(method = "GLM - all attributes", Accuracy =accuracy_glm,SensitivityorRecall = Sensitivity_glm, Specificity=Specificity_glm,Precision = Precision_glm, F1= F1_glm  )
+
+Confusion_table <- as.data.frame(Confusion_table)
+
+Confusion_table %>% knitr::kable()
+
+
+glm_fit_all <- Portdata_main_train %>% 
+  glm(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group, data=., family = binomial(link='logit'))
+p_hat_logit_all <- predict(glm_fit_all, newdata = Portdata_main_test, type = "response") 
+y_hat_logit_all <- ifelse(p_hat_logit_all > 0.25,1, 0) %>% factor
+conf_glm_all <- confusionMatrix(y_hat_logit_all, Portdata_main_test$y_output)
+#$overall[["Accuracy"]]
+accuracy_glm_all = conf_glm_all$overall[["Accuracy"]]
+Sensitivity_glm_all = conf_glm_all$byClass[["Sensitivity"]]
+Specificity_glm_all = conf_glm_all$byClass[["Specificity"]]
+Precision_glm_all = conf_glm_all$byClass[["Precision"]]
+F1_glm_all = conf_glm_all$byClass[["F1"]]
+
+### Cross table validation for KNN
+CrossTable(Portdata_main_test$y_output, y_hat_logit_all,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+Confusion_table <- bind_rows(Confusion_table,
+                             data_frame(method = "GLM - selected attributes", Accuracy =accuracy_glm_all,SensitivityorRecall = Sensitivity_glm_all, Specificity=Specificity_glm_all,Precision = Precision_glm_all, F1= F1_glm_all))
+
+
+Confusion_table %>% knitr::kable()
+
+```
+
+### RPART:
+
+The rpart algorithm works by splitting the dataset recursively, which means that the subsets that arise from a split are further split until a predetermined termination criterion is reached.  At each step, the split is made based on the independent variable that results in the largest possible reduction in heterogeneity of the dependent (predicted) variable.
+
+--Not require----
+Splitting rules can be constructed in many different ways, all of which are based on the notion of impurity-  a measure of the degree of heterogeneity of the leaf nodes. Put another way, a leaf node that contains a single class is homogeneous and has impurity=0.   There are three popular impurity quantification methods: Entropy (aka information gain), Gini Index and Classification Error.  Check out this article for a simple explanation of the three methods.
+
+---Not require----
+
+### KNN:
+
+K-Nearest Neighbors (KNN) is one of the simplest algorithms used in Machine Learning for regression and classification problem. KNN algorithms use data and classify new data points based on similarity measures (e.g. distance function). Classification is done by a majority vote to its neighbors. The data is assigned to the class which has the nearest neighbors. As you increase the number of nearest neighbors, the value of k, accuracy might increase.
+
+### Randomforest:
+
+In the random forest approach, a large number of decision trees are created. Every observation is fed into every decision tree. The most common outcome for each observation is used as the final output. A new observation is fed into all the trees and taking a majority vote for each classification model.
+
+### Conditional Inference:
+
+Conditional inference trees estimate a regression relationship by binary recursive partitioning in a conditional inference framework. Roughly, the algorithm works as follows: 1) Test the global null hypothesis of independence between any of the input variables and the response (which may be multivariate as well). Stop if this hypothesis cannot be rejected. Otherwise select the input variable with strongest association to the resonse. This association is measured by a p-value corresponding to a test for the partial null hypothesis of a single input variable and the response. 2) Implement a binary split in the selected input variable. 3) Recursively repeate steps 1) and 2)

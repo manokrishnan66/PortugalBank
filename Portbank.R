@@ -346,9 +346,35 @@ CrossTable(Portdata_main_test$y_output, y_hat_logit,
            prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
            dnn = c('actual default', 'predicted default'))
 
-Confusion_table <- data_frame(method = "GLM", Accuracy =accuracy_glm,SensitivityorRecall = Sensitivity_glm, Specificity=Specificity_glm,Precision = Precision_glm, F1= F1_glm  )
+Confusion_table <- data_frame(method = "GLM - All attributes", Accuracy =accuracy_glm,SensitivityorRecall = Sensitivity_glm, Specificity=Specificity_glm,Precision = Precision_glm, F1= F1_glm  )
 
 Confusion_table <- as.data.frame(Confusion_table)
+
+Confusion_table %>% knitr::kable()
+
+
+glm_fit_all <- Portdata_main_train %>% 
+  glm(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group, data=., family = binomial(link='logit'))
+p_hat_logit_all <- predict(glm_fit_all, newdata = Portdata_main_test, type = "response") 
+y_hat_logit_all <- ifelse(p_hat_logit_all > 0.25,1, 0) %>% factor
+conf_glm_all <- confusionMatrix(y_hat_logit_all, Portdata_main_test$y_output)
+#$overall[["Accuracy"]]
+accuracy_glm_all = conf_glm_all$overall[["Accuracy"]]
+Sensitivity_glm_all = conf_glm_all$byClass[["Sensitivity"]]
+Specificity_glm_all = conf_glm_all$byClass[["Specificity"]]
+Precision_glm_all = conf_glm_all$byClass[["Precision"]]
+F1_glm_all = conf_glm_all$byClass[["F1"]]
+
+### Cross table validation for KNN
+CrossTable(Portdata_main_test$y_output, y_hat_logit_all,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+
+
+Confusion_table <- bind_rows(Confusion_table,
+                             data_frame(method = "GLM - selected attributes", Accuracy =accuracy_glm_all,SensitivityorRecall = Sensitivity_glm_all, Specificity=Specificity_glm_all,Precision = Precision_glm_all, F1= F1_glm_all))
+
 
 Confusion_table %>% knitr::kable()
 
