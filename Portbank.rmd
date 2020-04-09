@@ -478,47 +478,63 @@ Logistic regression is useful when you are predicting a binary outcome from a se
 
 glm_fit <- Portdata_main_train %>% 
     glm(y_output ~ ., data=., family = binomial(link='logit'))
+
 p_hat_logit <- predict(glm_fit, newdata = Portdata_main_test, type = "response") 
 y_hat_logit <- ifelse(p_hat_logit > 0.25,1, 0) %>% factor
-conf_glm <- confusionMatrix(y_hat_logit, Portdata_main_test$y_output)
-#$overall[["Accuracy"]]
+
+
+CrossTable(Portdata_main_test$y_output, y_hat_logit,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+
+conf_glm <- confusionMatrix(y_hat_logit, Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
+
+conf_glm
+
 accuracy_glm = conf_glm$overall[["Accuracy"]]
 Sensitivity_glm = conf_glm$byClass[["Sensitivity"]]
 Specificity_glm = conf_glm$byClass[["Specificity"]]
 Precision_glm = conf_glm$byClass[["Precision"]]
 F1_glm = conf_glm$byClass[["F1"]]
 
-### Cross table validation for KNN
-CrossTable(Portdata_main_test$y_output, y_hat_logit,
-           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
-           dnn = c('actual default', 'predicted default'))
 
-Confusion_table <- data_frame(method = "GLM - all attributes", Accuracy =accuracy_glm,SensitivityorRecall = Sensitivity_glm, Specificity=Specificity_glm,Precision = Precision_glm, F1= F1_glm  )
+Confusion_table <- data_frame(method = "GLM - All attributes", 
+      Accuracy =accuracy_glm,SensitivityorRecall = Sensitivity_glm,       Specificity=Specificity_glm,Precision = Precision_glm, 
+      F1= F1_glm  )
 
 Confusion_table <- as.data.frame(Confusion_table)
 
 Confusion_table %>% knitr::kable()
 
+# selected attributes
 
 glm_fit_all <- Portdata_main_train %>% 
   glm(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group, data=., family = binomial(link='logit'))
 p_hat_logit_all <- predict(glm_fit_all, newdata = Portdata_main_test, type = "response") 
 y_hat_logit_all <- ifelse(p_hat_logit_all > 0.25,1, 0) %>% factor
-conf_glm_all <- confusionMatrix(y_hat_logit_all, Portdata_main_test$y_output)
-#$overall[["Accuracy"]]
+
+CrossTable(Portdata_main_test$y_output, y_hat_logit_all,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+
+conf_glm_all <- confusionMatrix(y_hat_logit_all, Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
+
+conf_glm_all
+
 accuracy_glm_all = conf_glm_all$overall[["Accuracy"]]
 Sensitivity_glm_all = conf_glm_all$byClass[["Sensitivity"]]
 Specificity_glm_all = conf_glm_all$byClass[["Specificity"]]
 Precision_glm_all = conf_glm_all$byClass[["Precision"]]
 F1_glm_all = conf_glm_all$byClass[["F1"]]
 
-### Cross table validation for KNN
-CrossTable(Portdata_main_test$y_output, y_hat_logit_all,
-           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
-           dnn = c('actual default', 'predicted default'))
 
 Confusion_table <- bind_rows(Confusion_table,
-                             data_frame(method = "GLM - selected attributes", Accuracy =accuracy_glm_all,SensitivityorRecall = Sensitivity_glm_all, Specificity=Specificity_glm_all,Precision = Precision_glm_all, F1= F1_glm_all))
+    data_frame(method = "GLM - Selected attributes", 
+    Accuracy =accuracy_glm_all,SensitivityorRecall = 
+    Sensitivity_glm_all, Specificity=Specificity_glm_all,
+    Precision = Precision_glm_all, F1= F1_glm_all))
 
 
 Confusion_table %>% knitr::kable()
@@ -529,19 +545,362 @@ Confusion_table %>% knitr::kable()
 
 The rpart algorithm works by splitting the dataset recursively, which means that the subsets that arise from a split are further split until a predetermined termination criterion is reached.  At each step, the split is made based on the independent variable that results in the largest possible reduction in heterogeneity of the dependent (predicted) variable.
 
---Not require----
-Splitting rules can be constructed in many different ways, all of which are based on the notion of impurity-  a measure of the degree of heterogeneity of the leaf nodes. Put another way, a leaf node that contains a single class is homogeneous and has impurity=0.   There are three popular impurity quantification methods: Entropy (aka information gain), Gini Index and Classification Error.  Check out this article for a simple explanation of the three methods.
+```{r RPART_data}
 
----Not require----
+# All attributes
 
-### KNN:
+model_rpart = rpart(formula = y_output ~ .,
+                    data = Portdata_main_train, method = "class")
+p_hat_logit <- predict(model_rpart, newdata = Portdata_main_test, type = "class") 
 
-K-Nearest Neighbors (KNN) is one of the simplest algorithms used in Machine Learning for regression and classification problem. KNN algorithms use data and classify new data points based on similarity measures (e.g. distance function). Classification is done by a majority vote to its neighbors. The data is assigned to the class which has the nearest neighbors. As you increase the number of nearest neighbors, the value of k, accuracy might increase.
+CrossTable(Portdata_main_test$y_output, p_hat_logit,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+fancyRpartPlot(model_rpart ,digits=2, type=2,palettes = c("Purples", "Oranges"))
+
+
+conf_rpart <- confusionMatrix(p_hat_logit, Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
+
+conf_rpart
+
+accuracy_rpart = conf_rpart$overall[["Accuracy"]]
+Sensitivity_rpart = conf_rpart$byClass[["Sensitivity"]]
+Specificity_rpart = conf_rpart$byClass[["Specificity"]]
+Precision_rpart = conf_rpart$byClass[["Precision"]]
+F1_rpart = conf_rpart$byClass[["F1"]]
+
+Confusion_table <- bind_rows(Confusion_table,
+       data_frame(method = "Rpart - All attributes", 
+       Accuracy =accuracy_rpart,SensitivityorRecall = 
+       Sensitivity_rpart, Specificity=Specificity_rpart,
+       Precision = Precision_rpart, F1= F1_rpart))
+
+Confusion_table %>% knitr::kable()
+
+
+# Selected attributes
+
+model_rpart_select = rpart(formula = y_output ~ Duration_group+month+poutcome+Age_group+pdays_group,
+                   data = Portdata_main_train, method = "class")
+
+p_hat_logit_select <- predict(model_rpart_select, newdata = Portdata_main_test, type = "class")
+
+
+CrossTable(Portdata_main_test$y_output, p_hat_logit_select,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+fancyRpartPlot(model_rpart_select ,digits=2, type=2,palettes = c("Purples", "Oranges"))
+
+
+conf_rpart_select <- confusionMatrix(p_hat_logit_select, Portdata_main_test$y_output,mode = "prec_recall", positive = '1')
+
+conf_rpart_select
+
+accuracy_rpart_select = conf_rpart_select$overall[["Accuracy"]]
+Sensitivity_rpart_select = conf_rpart_select$byClass[["Sensitivity"]]
+Specificity_rpart_select = conf_rpart_select$byClass[["Specificity"]]
+Precision_rpart_select = conf_rpart_select$byClass[["Precision"]]
+F1_rpart_select = conf_rpart_select$byClass[["F1"]]
+
+Confusion_table <- bind_rows(Confusion_table,
+      data_frame(method = "Rpart - Selected attributes", 
+      Accuracy =accuracy_rpart_select,SensitivityorRecall = 
+      Sensitivity_rpart_select,Specificity=Specificity_rpart_select
+      ,Precision = Precision_rpart_select, F1= F1_rpart_select))
+
+Confusion_table %>% knitr::kable()
+
+
+```
+
 
 ### Randomforest:
 
 In the random forest approach, a large number of decision trees are created. Every observation is fed into every decision tree. The most common outcome for each observation is used as the final output. A new observation is fed into all the trees and taking a majority vote for each classification model.
 
-### Conditional Inference:
+```{r RF_data}
+# All attributes 
 
-Conditional inference trees estimate a regression relationship by binary recursive partitioning in a conditional inference framework. Roughly, the algorithm works as follows: 1) Test the global null hypothesis of independence between any of the input variables and the response (which may be multivariate as well). Stop if this hypothesis cannot be rejected. Otherwise select the input variable with strongest association to the resonse. This association is measured by a p-value corresponding to a test for the partial null hypothesis of a single input variable and the response. 2) Implement a binary split in the selected input variable. 3) Recursively repeate steps 1) and 2)
+model_rf = randomForest(y_output ~ .,
+                    data = Portdata_main_train)
+
+pred_rf <- predict(model_rf, newdata = Portdata_main_test, type = "class") 
+
+CrossTable(Portdata_main_test$y_output, pred_rf,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+
+conf_rf <- confusionMatrix(pred_rf, Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
+
+conf_rf
+
+accuracy_rf = conf_rf$overall[["Accuracy"]]
+Sensitivity_rf = conf_rf$byClass[["Sensitivity"]]
+Specificity_rf = conf_rf$byClass[["Specificity"]]
+Precision_rf = conf_rf$byClass[["Precision"]]
+F1_rf = conf_rf$byClass[["F1"]]
+
+
+Confusion_table <- bind_rows(Confusion_table,
+  data_frame(method = "RF - All attributes", Accuracy =accuracy_rf,
+  SensitivityorRecall = Sensitivity_rf, 
+  Specificity=Specificity_rf,Precision = Precision_rf, F1= F1_rf))
+
+Confusion_table %>% knitr::kable()
+
+# Selected attributes
+
+model_rf_select = randomForest(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group,
+                        data = Portdata_main_train)
+
+pred_rf_select <- predict(model_rf_select, newdata = Portdata_main_test, type = "class") 
+
+CrossTable(Portdata_main_test$y_output, pred_rf_select,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+
+conf_rf_select <- confusionMatrix(pred_rf_select, Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
+
+conf_rf_select
+
+accuracy_rf_select = conf_rf_select$overall[["Accuracy"]]
+Sensitivity_rf_select = conf_rf_select$byClass[["Sensitivity"]]
+Specificity_rf_select = conf_rf_select$byClass[["Specificity"]]
+Precision_rf_select = conf_rf_select$byClass[["Precision"]]
+F1_rf_select = conf_rf_select$byClass[["F1"]]
+
+
+Confusion_table <- bind_rows(Confusion_table,
+      data_frame(method = "RF - Selected attributes", 
+      Accuracy =accuracy_rf_select,SensitivityorRecall = 
+      Sensitivity_rf_select, Specificity=Specificity_rf_select,
+      Precision = Precision_rf_select, F1= F1_rf_select))
+
+Confusion_table %>% knitr::kable()
+```
+
+
+### KNN:
+
+K-Nearest Neighbors (KNN) is one of the simplest algorithms used in Machine Learning for regression and classification problem. KNN algorithms use data and classify new data points based on similarity measures (e.g. distance function). Classification is done by a majority vote to its neighbors. The data is assigned to the class which has the nearest neighbors. As you increase the number of nearest neighbors, the value of k, accuracy might increase.
+
+```{r KNN_data}
+# ALL Attributes
+
+model_knn <- train(y_output ~ ., data = Portdata_main_train, method = "knn", 
+                  maximize = TRUE,
+                  trControl = trainControl(method = "cv", number = 10),
+                  preProcess=c("center", "scale"))
+
+pred_kNN <- predict(model_knn , Portdata_main_test)
+
+
+CrossTable(Portdata_main_test$y_output, pred_kNN,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+
+conf_knn <- confusionMatrix(pred_kNN , Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
+conf_knn
+
+accuracy_knn = conf_knn$overall[["Accuracy"]]
+Sensitivity_knn = conf_knn$byClass[["Sensitivity"]]
+Specificity_knn = conf_knn$byClass[["Specificity"]]
+Precision_knn = conf_knn$byClass[["Precision"]]
+F1_knn = conf_knn$byClass[["F1"]]
+
+
+Confusion_table <- bind_rows(Confusion_table,
+      data_frame(method = "KNN-All attributes", 
+      Accuracy =accuracy_knn,SensitivityorRecall = Sensitivity_knn,       Specificity=Specificity_knn,Precision = Precision_knn, 
+      F1= F1_knn))
+
+Confusion_table %>% knitr::kable()
+
+```
+
+### Confusion Matrix
+
+A confusion matrix is a technique for summarizing the performance of a classification algorithm.
+
+Classification accuracy alone can be misleading if you have an unequal number of observations in each class or if you have more than two classes in your dataset.
+
+Calculating a confusion matrix can give you a better idea of what your classification model is getting right and what types of errors it is making.
+
+As there are many parameters present in the confusion matrix, we are concentrating on the below parameters for our analysis.
+
+Accuracy - Accuracy is the most intuitive performance measure and it is simply a ratio of correctly predicted observation to the total observations. One may think that, if we have high accuracy then our model is best. Yes, accuracy is a great measure but only when you have symmetric datasets where values of false positive and false negatives are almost same. Therefore, you have to look at other parameters to evaluate the performance of your model.
+
+Accuracy = TP+TN/TP+FP+FN+TN
+
+Precision - Precision is the ratio of correctly predicted positive observations to the total predicted positive observations. 
+
+Precision = TP/TP+FP
+
+Recall (Sensitivity) - Recall is the ratio of correctly predicted positive observations to the all observations in actual class - yes. 
+
+Recall = TP/TP+FN
+
+Specificity - The proportion of observed negatives that were predicted to be negatives.  In other words, of all the transactions that were legitimate, what percentage did we predict to be so?
+
+Specificity = TN/FP+TN
+
+F1 score - F1 Score is the weighted average of Precision and Recall. Therefore, this score takes both false positives and false negatives into account. Intuitively it is not as easy to understand as accuracy, but F1 is usually more useful than accuracy, especially if you have an uneven class distribution. Accuracy works best if false positives and false negatives have similar cost. If the cost of false positives and false negatives are very different, it’s better to look at both Precision and Recall. 
+
+F1 Score = 2*(Recall * Precision) / (Recall + Precision)
+
+Final confusion matrix table as below:
+
+```{r Confusion_data}
+Confusion_table %>% knitr::kable()
+```
+
+# Results and Discussion
+
+Based on the above confusion matrix details of all the analysed models, we shortlisted GLM - All attributes and GLM - Selected attributes as the F1 and Recall values are good, and RF - All atrributes and Rf - Selected atrributes as the Accuracy, Precision and Specificity are good.
+
+Hence, we implemented the above 4 models into the Validation set for the final conclusion. 
+
+```{r Final_data}
+#GLM:
+
+glm_fit_final <- Portdata_main %>% 
+  glm(y_output ~ ., data=., family = binomial(link='logit'))
+p_hat_logit_final <- predict(glm_fit_final, newdata = Portdata_validation, type = "response") 
+y_hat_logit_final <- ifelse(p_hat_logit_final > 0.25,1, 0) %>% factor
+
+
+CrossTable(Portdata_validation$y_output, y_hat_logit_final,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+
+conf_glm_final <- confusionMatrix(y_hat_logit_final, Portdata_validation$y_output, mode = "prec_recall", positive = '1')
+
+conf_glm_final
+
+accuracy_glm_final = conf_glm_final$overall[["Accuracy"]]
+Sensitivity_glm_final = conf_glm_final$byClass[["Sensitivity"]]
+Specificity_glm_final = conf_glm_final$byClass[["Specificity"]]
+Precision_glm_final = conf_glm_final$byClass[["Precision"]]
+F1_glm_final = conf_glm_final$byClass[["F1"]]
+
+
+Confusion_table_final <- data_frame(method = "GLM - Final 
+          - All attributes", Accuracy =accuracy_glm_final,
+          SensitivityorRecall = Sensitivity_glm_final, 
+          Specificity=Specificity_glm_final,
+          Precision = Precision_glm_final, F1= F1_glm_final  )
+
+Confusion_table_final <- as.data.frame(Confusion_table_final)
+
+Confusion_table_final %>% knitr::kable()
+
+# Selected attributes
+
+glm_fit_select_final <- Portdata_main %>% 
+  glm(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group, data=., family = binomial(link='logit'))
+p_hat_logit_select_final <- predict(glm_fit_select_final, newdata = Portdata_validation, type = "response") 
+y_hat_logit_select_final <- ifelse(p_hat_logit_select_final > 0.25,1, 0) %>% factor
+
+
+CrossTable(Portdata_validation$y_output, y_hat_logit_select_final,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+conf_glm_select_final <- confusionMatrix(y_hat_logit_select_final, Portdata_validation$y_output, mode = "prec_recall", positive = '1')
+
+conf_glm_select_final
+
+accuracy_glm_select_final = conf_glm_select_final$overall[["Accuracy"]]
+Sensitivity_glm_select_final = conf_glm_select_final$byClass[["Sensitivity"]]
+Specificity_glm_select_final = conf_glm_select_final$byClass[["Specificity"]]
+Precision_glm_select_final = conf_glm_select_final$byClass[["Precision"]]
+F1_glm_select_final = conf_glm_select_final$byClass[["F1"]]
+
+
+Confusion_table_final <- bind_rows(Confusion_table_final,
+      data_frame(method = "GLM - Final - selected attributes", 
+      Accuracy =accuracy_glm_select_final,SensitivityorRecall = 
+      Sensitivity_glm_select_final, 
+      Specificity=Specificity_glm_select_final,Precision =               Precision_glm_select_final, F1= F1_glm_select_final))
+
+
+Confusion_table_final %>% knitr::kable()
+
+
+##Randomforest
+
+# All attributes 
+
+model_rf_final = randomForest(y_output ~ .,
+                        data = Portdata_main)
+
+pred_rf_final <- predict(model_rf_final, newdata = Portdata_validation, type = "class") 
+
+
+CrossTable(Portdata_validation$y_output, pred_rf_final,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+
+conf_rf_final <- confusionMatrix(pred_rf_final, Portdata_validation$y_output, mode = "prec_recall", positive = '1')
+
+conf_rf_final
+
+accuracy_rf_final = conf_rf_final$overall[["Accuracy"]]
+Sensitivity_rf_final = conf_rf_final$byClass[["Sensitivity"]]
+Specificity_rf_final = conf_rf_final$byClass[["Specificity"]]
+Precision_rf_final = conf_rf_final$byClass[["Precision"]]
+F1_rf_final = conf_rf_final$byClass[["F1"]]
+
+
+Confusion_table_final <- bind_rows(Confusion_table_final,
+    data_frame(method = "RF - Final - All attributes", 
+    Accuracy =accuracy_rf_final,SensitivityorRecall = 
+    Sensitivity_rf_final,Specificity=Specificity_rf_final,
+    Precision = Precision_rf_final, F1= F1_rf_final))
+
+Confusion_table_final %>% knitr::kable()
+
+
+# Selected attributes
+
+
+model_rf_select_final = randomForest(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group,
+                               data = Portdata_main)
+
+pred_rf_select_final <- predict(model_rf_select_final, newdata = Portdata_validation, type = "class") 
+
+CrossTable(Portdata_validation$y_output, pred_rf_select_final,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+
+conf_rf_select_final <- confusionMatrix(pred_rf_select_final, Portdata_validation$y_output, mode = "prec_recall", positive = '1')
+
+conf_rf_select_final
+
+accuracy_rf_select_final = conf_rf_select_final$overall[["Accuracy"]]
+Sensitivity_rf_select_final = conf_rf_select_final$byClass[["Sensitivity"]]
+Specificity_rf_select_final = conf_rf_select_final$byClass[["Specificity"]]
+Precision_rf_select_final = conf_rf_select_final$byClass[["Precision"]]
+F1_rf_select_final = conf_rf_select_final$byClass[["F1"]]
+
+
+Confusion_table_final <- bind_rows(Confusion_table_final,
+      data_frame(method = "RF - Final - Selected attributes", 
+      Accuracy =accuracy_rf_select_final,
+      SensitivityorRecall = Sensitivity_rf_select_final, 
+      Specificity=Specificity_rf_select_final,Precision = 
+      Precision_rf_select_final, F1= F1_rf_select_final))
+
+Confusion_table_final %>% knitr::kable()
+
+```
+
+# Conclusion

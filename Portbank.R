@@ -11,6 +11,8 @@ library(RColorBrewer)
 library(rattle)
 library(descr)
 library(randomForest)
+install.packages("partykit")
+library("partykit")
 
 Portdata <- read_delim("bank-full.csv", 
                          ";", escape_double = FALSE, trim_ws = TRUE)
@@ -380,8 +382,39 @@ Confusion_table %>% knitr::kable()
 
 
 ##RPART
-model_rpart = rpart(formula = y_output ~ .,
+
+# Selected attributes
+
+model_rpart_select = rpart(formula = y_output ~ Duration_group+month+poutcome+Age_group+pdays_group,
                    data = Portdata_main_train, method = "class")
+
+# plot
+#prp(model_rpart, type = 2, extra = 104, fallen.leaves = TRUE, main="Decision Tree")
+
+p_hat_logit_select <- predict(model_rpart_select, newdata = Portdata_main_test, type = "class") 
+#y_hat_logit <- ifelse(p_hat_logit > 0.5,1, 0) %>% factor
+conf_rpart_select <- confusionMatrix(p_hat_logit_select, Portdata_main_test$y_output)
+
+accuracy_rpart_select = conf_rpart_select$overall[["Accuracy"]]
+Sensitivity_rpart_select = conf_rpart_select$byClass[["Sensitivity"]]
+Specificity_rpart_select = conf_rpart_select$byClass[["Specificity"]]
+Precision_rpart_select = conf_rpart_select$byClass[["Precision"]]
+F1_rpart_select = conf_rpart_select$byClass[["F1"]]
+
+Confusion_table <- bind_rows(Confusion_table,
+                          data_frame(method = "Rpart-selected attributes", Accuracy =accuracy_rpart_select,SensitivityorRecall = Sensitivity_rpart_select, Specificity=Specificity_rpart_select,Precision = Precision_rpart_select, F1= F1_rpart_select))
+# save rmse results in a table
+Confusion_table %>% knitr::kable()
+
+
+fancyRpartPlot(model_rpart_select ,digits=2, type=2,palettes = c("Purples", "Oranges"))
+
+rpart.plot(model_rpart_select)
+
+# All attributes
+
+model_rpart = rpart(formula = y_output ~ .,
+                    data = Portdata_main_train, method = "class")
 
 # plot
 #prp(model_rpart, type = 2, extra = 104, fallen.leaves = TRUE, main="Decision Tree")
@@ -397,7 +430,7 @@ Precision_rpart = conf_rpart$byClass[["Precision"]]
 F1_rpart = conf_rpart$byClass[["F1"]]
 
 Confusion_table <- bind_rows(Confusion_table,
-                          data_frame(method = "Rpart", Accuracy =accuracy_rpart,SensitivityorRecall = Sensitivity_rpart, Specificity=Specificity_rpart,Precision = Precision_rpart, F1= F1_rpart))
+                             data_frame(method = "Rpart - All attributes", Accuracy =accuracy_rpart,SensitivityorRecall = Sensitivity_rpart, Specificity=Specificity_rpart,Precision = Precision_rpart, F1= F1_rpart))
 # save rmse results in a table
 Confusion_table %>% knitr::kable()
 
@@ -406,7 +439,10 @@ fancyRpartPlot(model_rpart ,digits=2, type=2,palettes = c("Purples", "Oranges"))
 
 rpart.plot(model_rpart)
 
+
 ##Knn
+
+# ALL Attributes
 
 model_knn <- train(y_output ~ ., data = Portdata_main_train, method = "knn", 
                   maximize = TRUE,
@@ -425,7 +461,7 @@ F1_knn = conf_knn$byClass[["F1"]]
 
 
 Confusion_table <- bind_rows(Confusion_table,
-                             data_frame(method = "KNN", Accuracy =accuracy_knn,SensitivityorRecall = Sensitivity_knn, Specificity=Specificity_knn,Precision = Precision_knn, F1= F1_knn))
+                             data_frame(method = "KNN-All attributes", Accuracy =accuracy_knn,SensitivityorRecall = Sensitivity_knn, Specificity=Specificity_knn,Precision = Precision_knn, F1= F1_knn))
 # save rmse results in a table
 Confusion_table %>% knitr::kable()
 
@@ -434,6 +470,36 @@ Confusion_table %>% knitr::kable()
 CrossTable(Portdata_main_test$y_output, pred_kNN,
            prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
            dnn = c('actual default', 'predicted default'))
+
+# Selected attributes
+
+model_knn_select <- train(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group, data = Portdata_main_train, method = "knn", 
+                   maximize = TRUE,
+                   trControl = trainControl(method = "cv", number = 10),
+                   preProcess=c("center", "scale"))
+
+pred_kNN_select <- predict(model_knn_select , Portdata_main_test)
+conf_knn_select <- confusionMatrix(pred_kNN_select , Portdata_main_test$y_output)
+
+
+accuracy_knn_select = conf_knn_select$overall[["Accuracy"]]
+Sensitivity_knn_select = conf_knn_select$byClass[["Sensitivity"]]
+Specificity_knn_select = conf_knn_select$byClass[["Specificity"]]
+Precision_knn_select = conf_knn_select$byClass[["Precision"]]
+F1_knn_select = conf_knn_select$byClass[["F1"]]
+
+
+Confusion_table <- bind_rows(Confusion_table,
+                             data_frame(method = "KNN-Selected attributes", Accuracy =accuracy_knn_select,SensitivityorRecall = Sensitivity_knn_select, Specificity=Specificity_knn_select,Precision = Precision_knn_select, F1= F1_knn_select))
+# save rmse results in a table
+Confusion_table %>% knitr::kable()
+
+
+### Cross table validation for KNN
+CrossTable(Portdata_main_test$y_output, pred_kNN_select,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
 
 # Age - categ 0.422, 0.3402 4:
 # Month - Categ 0.51991, 0.467 2:
@@ -446,6 +512,8 @@ str(Portdata_main_train$Age_group)
 #Portdata_main_test=Portdata_main_test %>% mutate_if(is.character, as.factor)
 
 ##Randomforest
+
+# All attributes 
 
 model_rf = randomForest(y_output ~ .,
                     data = Portdata_main_train)
@@ -467,7 +535,7 @@ F1_rf = conf_rf$byClass[["F1"]]
 
 
 Confusion_table <- bind_rows(Confusion_table,
-                             data_frame(method = "RF", Accuracy =accuracy_rf,SensitivityorRecall = Sensitivity_rf, Specificity=Specificity_rf,Precision = Precision_rf, F1= F1_rf))
+                             data_frame(method = "RF - All attributes", Accuracy =accuracy_rf,SensitivityorRecall = Sensitivity_rf, Specificity=Specificity_rf,Precision = Precision_rf, F1= F1_rf))
 # save confusion results in a table
 Confusion_table %>% knitr::kable()
 
@@ -478,10 +546,69 @@ CrossTable(Portdata_main_test$y_output, pred_rf,
            dnn = c('actual default', 'predicted default'))
 
 
+# Selected attributes
+
+
+model_rf_select = randomForest(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group,
+                        data = Portdata_main_train)
+
+pred_rf_select <- predict(model_rf_select, newdata = Portdata_main_test, type = "class") 
+
+conf_rf_select <- confusionMatrix(pred_rf_select, Portdata_main_test$y_output)
+
+plot(model_rf_select, margin = 0.1)
+text(model_rf_select, cex = 0.75)
+
+accuracy_rf_select = conf_rf_select$overall[["Accuracy"]]
+Sensitivity_rf_select = conf_rf_select$byClass[["Sensitivity"]]
+Specificity_rf_select = conf_rf_select$byClass[["Specificity"]]
+Precision_rf_select = conf_rf_select$byClass[["Precision"]]
+F1_rf_select = conf_rf_select$byClass[["F1"]]
+
+
+Confusion_table <- bind_rows(Confusion_table,
+                             data_frame(method = "RF", Accuracy =accuracy_rf_select,SensitivityorRecall = Sensitivity_rf_select, Specificity=Specificity_rf_select,Precision = Precision_rf_select, F1= F1_rf_select))
+# save confusion results in a table
+Confusion_table %>% knitr::kable()
+
+
+### Cross table validation for rf
+CrossTable(Portdata_main_test$y_output, pred_rf_select,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+
 # ctree
 
-install.packages("partykit")
-library("partykit")
+# Selected attributes
+
+better_survival_ctree_select <- ctree(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group, data=Portdata_main_train)
+plot(better_survival_ctree_select)
+pred_ctree_select <- predict(better_survival_ctree_select, Portdata_main_test, type = "response") 
+
+conf_ctree_select <- confusionMatrix(pred_ctree_select, Portdata_main_test$y_output)
+
+
+accuracy_ctree_select = conf_ctree_select$overall[["Accuracy"]]
+Sensitivity_ctree_select = conf_ctree_select$byClass[["Sensitivity"]]
+Specificity_ctree_select = conf_ctree_select$byClass[["Specificity"]]
+Precision_ctree_select = conf_ctree_select$byClass[["Precision"]]
+F1_ctree_select = conf_ctree_select$byClass[["F1"]]
+
+
+Confusion_table <- bind_rows(Confusion_table,
+                             data_frame(method = "Ctree - Selected attributes", Accuracy =accuracy_ctree_select,SensitivityorRecall = Sensitivity_ctree_select, Specificity=Specificity_ctree_select,Precision = Precision_ctree_select, F1= F1_ctree_select))
+# save confusion results in a table
+Confusion_table %>% knitr::kable()
+
+
+### Cross table validation for ctree
+CrossTable(Portdata_main_test$y_output, pred_ctree_select,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+# All attributes
+
 better_survival_ctree <- ctree(y_output ~ ., data=Portdata_main_train)
 plot(better_survival_ctree)
 pred_ctree <- predict(better_survival_ctree, Portdata_main_test, type = "response") 
@@ -497,7 +624,7 @@ F1_ctree = conf_ctree$byClass[["F1"]]
 
 
 Confusion_table <- bind_rows(Confusion_table,
-                             data_frame(method = "Ctree", Accuracy =accuracy_ctree,SensitivityorRecall = Sensitivity_ctree, Specificity=Specificity_ctree,Precision = Precision_ctree, F1= F1_ctree))
+                             data_frame(method = "Ctree - All attributes", Accuracy =accuracy_ctree,SensitivityorRecall = Sensitivity_ctree, Specificity=Specificity_ctree,Precision = Precision_ctree, F1= F1_ctree))
 # save confusion results in a table
 Confusion_table %>% knitr::kable()
 
@@ -506,4 +633,120 @@ Confusion_table %>% knitr::kable()
 CrossTable(Portdata_main_test$y_output, pred_ctree,
            prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
            dnn = c('actual default', 'predicted default'))
+
+### Final model:
+
+#GLM:
+
+glm_fit_final <- Portdata_main %>% 
+  glm(y_output ~ ., data=., family = binomial(link='logit'))
+p_hat_logit_final <- predict(glm_fit_final, newdata = Portdata_validation, type = "response") 
+y_hat_logit_final <- ifelse(p_hat_logit_final > 0.25,1, 0) %>% factor
+
+
+CrossTable(Portdata_validation$y_output, y_hat_logit_final,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+
+conf_glm_final <- confusionMatrix(y_hat_logit_final, Portdata_validation$y_output, mode = "prec_recall", positive = '1')
+
+accuracy_glm_final = conf_glm_final$overall[["Accuracy"]]
+Sensitivity_glm_final = conf_glm_final$byClass[["Sensitivity"]]
+Specificity_glm_final = conf_glm_final$byClass[["Specificity"]]
+Precision_glm_final = conf_glm_final$byClass[["Precision"]]
+F1_glm_final = conf_glm_final$byClass[["F1"]]
+
+
+Confusion_table_final <- data_frame(method = "GLM - Final - All attributes", Accuracy =accuracy_glm_final,SensitivityorRecall = Sensitivity_glm_final, Specificity=Specificity_glm_final,Precision = Precision_glm_final, F1= F1_glm_final  )
+
+Confusion_table_final <- as.data.frame(Confusion_table_final)
+
+Confusion_table_final %>% knitr::kable()
+
+# Selected attributes
+
+glm_fit_select_final <- Portdata_main %>% 
+  glm(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group, data=., family = binomial(link='logit'))
+p_hat_logit_select_final <- predict(glm_fit_select_final, newdata = Portdata_validation, type = "response") 
+y_hat_logit_select_final <- ifelse(p_hat_logit_select_final > 0.25,1, 0) %>% factor
+
+
+CrossTable(Portdata_validation$y_output, y_hat_logit_select_final,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+conf_glm_select_final <- confusionMatrix(y_hat_logit_select_final, Portdata_validation$y_output, mode = "prec_recall", positive = '1')
+
+accuracy_glm_select_final = conf_glm_select_final$overall[["Accuracy"]]
+Sensitivity_glm_select_final = conf_glm_select_final$byClass[["Sensitivity"]]
+Specificity_glm_select_final = conf_glm_select_final$byClass[["Specificity"]]
+Precision_glm_select_final = conf_glm_select_final$byClass[["Precision"]]
+F1_glm_select_final = conf_glm_select_final$byClass[["F1"]]
+
+
+Confusion_table_final <- bind_rows(Confusion_table_final,
+                             data_frame(method = "GLM - Final - selected attributes", Accuracy =accuracy_glm_select_final,SensitivityorRecall = Sensitivity_glm_select_final, Specificity=Specificity_glm_select_final,Precision = Precision_glm_select_final, F1= F1_glm_select_final))
+
+
+Confusion_table_final %>% knitr::kable()
+
+
+##Randomforest
+
+# All attributes 
+
+model_rf_final = randomForest(y_output ~ .,
+                        data = Portdata_main)
+
+pred_rf_final <- predict(model_rf_final, newdata = Portdata_validation, type = "class") 
+
+
+CrossTable(Portdata_validation$y_output, pred_rf_final,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+
+conf_rf_final <- confusionMatrix(pred_rf_final, Portdata_validation$y_output, mode = "prec_recall", positive = '1')
+
+accuracy_rf_final = conf_rf_final$overall[["Accuracy"]]
+Sensitivity_rf_final = conf_rf_final$byClass[["Sensitivity"]]
+Specificity_rf_final = conf_rf_final$byClass[["Specificity"]]
+Precision_rf_final = conf_rf_final$byClass[["Precision"]]
+F1_rf_final = conf_rf_final$byClass[["F1"]]
+
+
+Confusion_table_final <- bind_rows(Confusion_table_final,
+                             data_frame(method = "RF - Final - All attributes", Accuracy =accuracy_rf_final,SensitivityorRecall = Sensitivity_rf_final, Specificity=Specificity_rf_final,Precision = Precision_rf_final, F1= F1_rf_final))
+
+Confusion_table_final %>% knitr::kable()
+
+
+# Selected attributes
+
+
+model_rf_select_final = randomForest(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group,
+                               data = Portdata_main)
+
+pred_rf_select_final <- predict(model_rf_select_final, newdata = Portdata_validation, type = "class") 
+
+CrossTable(Portdata_validation$y_output, pred_rf_select_final,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+
+conf_rf_select_final <- confusionMatrix(pred_rf_select_final, Portdata_validation$y_output, mode = "prec_recall", positive = '1')
+
+
+accuracy_rf_select_final = conf_rf_select_final$overall[["Accuracy"]]
+Sensitivity_rf_select_final = conf_rf_select_final$byClass[["Sensitivity"]]
+Specificity_rf_select_final = conf_rf_select_final$byClass[["Specificity"]]
+Precision_rf_select_final = conf_rf_select_final$byClass[["Precision"]]
+F1_rf_select_final = conf_rf_select_final$byClass[["F1"]]
+
+
+Confusion_table_final <- bind_rows(Confusion_table_final,
+                             data_frame(method = "RF - Final - Selected attributes", Accuracy =accuracy_rf_select_final,SensitivityorRecall = Sensitivity_rf_select_final, Specificity=Specificity_rf_select_final,Precision = Precision_rf_select_final, F1= F1_rf_select_final))
+# save confusion results in a table
+Confusion_table_final %>% knitr::kable()
 
