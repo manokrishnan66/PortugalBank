@@ -12,12 +12,12 @@ output:
 
 # Introduction
 
-We chose Bank Marketing Data set for the final project on Data science. This is Portuguese Banking institutional data. It has many attributes including client subscribed to term deposit or not. The aim is to build models that can predict if client will subscribe to term deposit or not.
+We chose Bank Marketing Data set for the final project on Data science. This is Portuguese Banking institutional data. It has many attributes including a client's subscription to term deposit or not. The aim is to build models that can predict whether client will subscribe to term deposit or not.
 
 
 ## Dataset and Data Loading
 
-This dataset is download from UCI Machi Learning Repository. This is related to direct marketing campaigns of the Portuguese Banking institution. This dataset is available at http://archive.ics.uci.edu/ml/datasets/Bank+Marketing. There were 4 datasets in it from which bank-full.csv is used that has all examples (45211) and 17 inputs ordered by date. There are 16 input variables and 1 output variable (desired target).
+This dataset is downloaded from UCI Machi Learning Repository. This is related to direct marketing campaigns of the Portuguese Banking institution. This dataset is available at http://archive.ics.uci.edu/ml/datasets/Bank+Marketing. There were 4 datasets in it from which bank-full.csv is used that has all examples (45211) and 17 inputs ordered by date. There are 16 input variables and 1 output variable (desired target).
 
 This had different categories of client data like job, age, marital, education, default, housing, loan, contact, month, balance, day_of_week, duration, campaign, pdays, previous, poutcome and one output variable y that denotes if client subscribed to term deposit or not. These data denote telemarketing data, customer data and some other data. Here, many attributes are numerical and some are categorical. We loaded the dataset in the R studio and checked for any missing values using is.na fucntion and found not missing data. Hence, we have clean data.
 
@@ -25,16 +25,16 @@ This had different categories of client data like job, age, marital, education, 
 
 The following libraries were used in this report:
 ```{r libs, warning=FALSE, error=FALSE, message=FALSE}
-library(ggplot2)
-library(tidyverse)
-library(lubridate)
-library(caret)
-library(rpart)
-library(rpart.plot)
-library(RColorBrewer)
-library(rattle)
-library(descr)
-library(randomForest)
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if(!require(ggplot2)) install.packages("ggplot2", repos = "http://cran.us.r-project.org")
+if(!require(lubridate)) install.packages("lubridate", repos = "http://cran.us.r-project.org")
+if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
+if(!require(rpart)) install.packages("rpart", repos = "http://cran.us.r-project.org")
+if(!require(rpart.plot)) install.packages("rpart.plot", repos = "http://cran.us.r-project.org")
+if(!require(rattle)) install.packages("rattle", repos = "http://cran.us.r-project.org")
+if(!require(RColorBrewer)) install.packages("RColorBrewer", repos = "http://cran.us.r-project.org")
+if(!require(descr)) install.packages("descr", repos = "http://cran.us.r-project.org")
+if(!require(randomForest)) install.packages("randomForest", repos = "http://cran.us.r-project.org")
 ```
 
 ### Dataset loading
@@ -94,7 +94,7 @@ Data visualization and data exploration is used to find the interesting trends a
 # Methodology & Analysis
 ## Data Pre-processing
 
-For the better analysis, we have mutated many attributes based on the logical segregation. The below mentioned attributes are mutated.
+For the better analysis, we have mutated many attributes based on the logical segregation. The below mentioned attributes were mutated.
 
 1. Age_group - Grouped age data into 4 categories. 
 
@@ -211,7 +211,7 @@ Portdata=Portdata %>% mutate_if(is.character, as.factor)
 # The few rows of the Portdata are presented below:
 head(Portdata) 
 
-# Summary Statistics of edx
+# Summary Statistics of Portdata
 summary(Portdata)
 ```
 
@@ -220,11 +220,13 @@ summary(Portdata)
 Each attribute of the dataset has been explored properly by comparing the count of the y_output.
 
 ```{r data_exploration}
-### Age - categ
+### Exploration of Age attribute
   
 Age_count <- data.frame(Portdata %>% group_by(Age_group, y_output) %>% summarise(Count = n()))
 
-Age_count <- Age_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1` ) %>% mutate(Percent_of_yes = Yes /(Yes + No)) %>% 
+Age_count <- Age_count %>% spread(y_output,Count) %>% 
+rename(No = `0`, Yes = `1` ) %>% 
+mutate(Percent_of_yes = Yes /(Yes + No)) %>% 
 arrange(desc(Percent_of_yes))  
 
 Age_count %>% knitr::kable()
@@ -244,7 +246,7 @@ Y="Age Group", x="Count of Output")
 g + geom_jitter(aes(col=Age_group)) + 
   geom_smooth(aes(col=Age_group), method="lm", se=F)
 
-### Job
+### Exploration of Job atrribute
 
 job_count <- data.frame(Portdata %>% group_by(job,y_output) %>% summarise(Count = n()))
 
@@ -253,7 +255,7 @@ job_count <- job_count %>% spread(y_output,Count) %>% rename(No = `0`, Yes = `1`
 
 job_count %>% knitr::kable()
 
-## Marital status
+### Exploration of Marital status
 
 Marital_count <- data.frame(Portdata %>% group_by(marital,y_output) %>% summarise(Count = n()))
 
@@ -268,7 +270,7 @@ Portdata %>% ggplot(aes(marital, fill = y_output)) +
   facet_wrap(y_output ~ .) +
   coord_flip()
 
-## Education
+### Exploration of Education attribute
 
 Education_count <- data.frame(Portdata %>% group_by(education,y_output) %>% summarise(Count = n()))
 
@@ -277,7 +279,7 @@ Education_count <- Education_count %>% spread(y_output,Count) %>% rename(No = `0
 
 Education_count %>% knitr::kable()
 
-## Default
+### Exploration of Default attribute
 
 Default_count <- data.frame(Portdata %>% group_by(default,y_output) %>% summarise(Count = n()))
 
@@ -286,7 +288,7 @@ Default_count <- Default_count %>% spread(y_output,Count) %>% rename(No = `0`, Y
 
 Default_count %>% knitr::kable()
 
-## Housing
+### Exploration of Housing attribute
 
 Housing_count <- data.frame(Portdata %>% group_by(housing,y_output) %>% summarise(Count = n()))
 
@@ -295,7 +297,7 @@ Housing_count <- Housing_count %>% spread(y_output,Count) %>% rename(No = `0`, Y
 
 Housing_count %>% knitr::kable()
 
-## Loan
+### Exploration of Loan attribute
 
 Loan_count <- data.frame(Portdata %>% group_by(loan,y_output) %>% summarise(Count = n()))
 
@@ -310,7 +312,7 @@ Portdata %>% ggplot(aes(loan, fill = y_output)) +
   facet_wrap(y_output ~ .) +
   coord_flip()
 
-## Contact
+### Exploration of Contact attribute
 
 Contact_count <- data.frame(Portdata %>% group_by(contact,y_output) %>% summarise(Count = n()))
 
@@ -322,7 +324,7 @@ Contact_count %>% knitr::kable()
 Portdata %>% ggplot(aes(contact, y_output, color = contact)) + 
   geom_jitter()
 
-## Month - Categ
+### Exploration of Month attribute
 
 Month_count <- data.frame(Portdata %>% group_by(month,y_output) %>% summarise(Count = n()))
 
@@ -338,8 +340,7 @@ Portdata %>% ggplot(aes(month, fill = y_output)) +
   facet_wrap(y_output ~ .) +
   coord_flip()
 
-
-# Poutcome - Categ
+### Exploration of Poutcome attribute
 
 Pout_count <- data.frame(Portdata %>% group_by(poutcome,y_output) %>% summarise(Count = n()))
 
@@ -351,11 +352,12 @@ Pout_count %>% knitr::kable()
 
 Portdata %>% ggplot(aes(poutcome, fill = y_output)) + 
   geom_bar() + 
-  labs(title = "Term Deposits Yes/No by previous campaign outcome", x="Previous campaign outcome", y="Count of Output") +
+  labs(title = "Term Deposits Yes/No by previous campaign outcome",
+  x="Previous campaign outcome", y="Count of Output") +
   facet_wrap(y_output ~ .) +
   coord_flip()
 
-## Customer Group
+### Exploration of Customer attribute
 
 Cust_count <- data.frame(Portdata %>% group_by(Cust_group,y_output) %>% summarise(Count = n()))
 
@@ -367,7 +369,7 @@ Cust_count %>% knitr::kable()
 Portdata %>% ggplot(aes(Cust_group, y_output, color = Cust_group)) + 
   geom_jitter()
 
-## day_group
+### Exploration of day_group attributes
 
 Day_count <- data.frame(Portdata %>% group_by(day_group,y_output) %>% summarise(Count = n()))
 
@@ -378,11 +380,12 @@ Day_count %>% knitr::kable()
 
 Portdata %>% ggplot(aes(day_group, fill = y_output)) + 
   geom_bar() + 
-  labs(title = "Term Deposits Yes/No by campaign period", x="Previous campaign period", y="Count of Output") +
+  labs(title = "Term Deposits Yes/No by campaign period", 
+  x="Previous campaign period", y="Count of Output") +
   facet_wrap(y_output ~ .) +
   coord_flip()
 
-## Duration group - Categ
+### Exploration of Duration attributes
 
 Duration_count <- data.frame(Portdata %>% group_by(Duration_group,y_output) %>% summarise(Count = n()))
 
@@ -394,7 +397,7 @@ Duration_count %>% knitr::kable()
 Portdata %>% ggplot(aes(Duration_group, y_output, color = Duration_group)) + 
   geom_jitter()
 
-## Campaign_group
+### Exploration of Campaign_group attributes
 
 Campaign_count <- data.frame(Portdata %>% group_by(Campaign_group,y_output) %>% summarise(Count = n()))
 
@@ -403,7 +406,7 @@ Campaign_count <- Campaign_count %>% spread(y_output,Count) %>% rename(No = `0`,
 
 Campaign_count %>% knitr::kable()
 
-## pdays_group categ
+### Exploration of pdays_group attributes
 
 pdays_count <- data.frame(Portdata %>% group_by(pdays_group,y_output) %>% summarise(Count = n()))
 
@@ -415,12 +418,12 @@ pdays_count %>% knitr::kable()
 
 Portdata %>% ggplot(aes(pdays_group, fill = y_output)) + 
   geom_bar() + 
-  labs(title = "Term Deposits Yes/No by previous contact gap", x="Previous contact gap", y="Count of Output") +
+  labs(title = "Term Deposits Yes/No by previous contact gap", 
+  x="Previous contact gap", y="Count of Output") +
   facet_wrap(y_output ~ .) +
   coord_flip()
 
-## previous_group
-
+### Exploration of previous_group attributes
 
 previous_count <- data.frame(Portdata %>% group_by(previous_group,y_output) %>% summarise(Count = n()))
 
@@ -445,9 +448,8 @@ Based on the above exploration, we can understand that some of the attributes co
 
 ### Splitting of dataset
 
-We had partitioned the banking dataset into 2 sets[main dataset and validation dataset]. The main datset is further splitted into train and test dataset. We are training the dataset with the train set and testing with the test dataset. Finally, we implemented the model in the validation dataset. 
+We had partitioned the banking dataset into 2 sets[main dataset and validation dataset in the 90:10 ratio]. The main datset is further splitted into train and test dataset[in the same 80:20 ratio]. We were training the dataset with the train set and testing with the test dataset.Then, based on the test results, we had finalised the model. Finally, we implemented the model in the validation dataset for the conclusion. 
 
-One set is used for building the algorithm and the second set are used for the validation of the model. The 10% of the movielens data represents the validation set.
 
 
 ```{r Split_data}
@@ -482,13 +484,14 @@ glm_fit <- Portdata_main_train %>%
 p_hat_logit <- predict(glm_fit, newdata = Portdata_main_test, type = "response") 
 y_hat_logit <- ifelse(p_hat_logit > 0.25,1, 0) %>% factor
 
-
+### Cross table of GLM - All attributes
 CrossTable(Portdata_main_test$y_output, y_hat_logit,
            prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
            dnn = c('actual default', 'predicted default'))
 
-
-conf_glm <- confusionMatrix(y_hat_logit, Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
+### Confusion matrix of GLM - All attributes
+conf_glm <- confusionMatrix(y_hat_logit, 
+Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
 
 conf_glm
 
@@ -498,9 +501,10 @@ Specificity_glm = conf_glm$byClass[["Specificity"]]
 Precision_glm = conf_glm$byClass[["Precision"]]
 F1_glm = conf_glm$byClass[["F1"]]
 
-
+## creation of confusion table for GLM - All attributes
 Confusion_table <- data_frame(method = "GLM - All attributes", 
-      Accuracy =accuracy_glm,SensitivityorRecall = Sensitivity_glm,       Specificity=Specificity_glm,Precision = Precision_glm, 
+      Accuracy =accuracy_glm,SensitivityorRecall = Sensitivity_glm,
+      Specificity=Specificity_glm,Precision = Precision_glm, 
       F1= F1_glm  )
 
 Confusion_table <- as.data.frame(Confusion_table)
@@ -510,16 +514,19 @@ Confusion_table %>% knitr::kable()
 # selected attributes
 
 glm_fit_all <- Portdata_main_train %>% 
-  glm(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group, data=., family = binomial(link='logit'))
+glm(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group,
+data=., family = binomial(link='logit'))
 p_hat_logit_all <- predict(glm_fit_all, newdata = Portdata_main_test, type = "response") 
 y_hat_logit_all <- ifelse(p_hat_logit_all > 0.25,1, 0) %>% factor
 
+### Cross table of GLM - Selected attributes
 CrossTable(Portdata_main_test$y_output, y_hat_logit_all,
            prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
            dnn = c('actual default', 'predicted default'))
 
-
-conf_glm_all <- confusionMatrix(y_hat_logit_all, Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
+### Confusion matrix of GLM - Selected attributes
+conf_glm_all <- confusionMatrix(y_hat_logit_all, 
+Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
 
 conf_glm_all
 
@@ -530,6 +537,7 @@ Precision_glm_all = conf_glm_all$byClass[["Precision"]]
 F1_glm_all = conf_glm_all$byClass[["F1"]]
 
 
+## Binding confusion table for GLM - All attributes
 Confusion_table <- bind_rows(Confusion_table,
     data_frame(method = "GLM - Selected attributes", 
     Accuracy =accuracy_glm_all,SensitivityorRecall = 
@@ -553,14 +561,17 @@ model_rpart = rpart(formula = y_output ~ .,
                     data = Portdata_main_train, method = "class")
 p_hat_logit <- predict(model_rpart, newdata = Portdata_main_test, type = "class") 
 
+### Cross table of Rpart - All attributes
 CrossTable(Portdata_main_test$y_output, p_hat_logit,
            prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
            dnn = c('actual default', 'predicted default'))
 
+## RPLOT for the model
 fancyRpartPlot(model_rpart ,digits=2, type=2,palettes = c("Purples", "Oranges"))
 
-
-conf_rpart <- confusionMatrix(p_hat_logit, Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
+### Confusion matrix of Rpart - All attributes
+conf_rpart <- confusionMatrix(p_hat_logit, 
+Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
 
 conf_rpart
 
@@ -570,6 +581,7 @@ Specificity_rpart = conf_rpart$byClass[["Specificity"]]
 Precision_rpart = conf_rpart$byClass[["Precision"]]
 F1_rpart = conf_rpart$byClass[["F1"]]
 
+## Binding confusion table for Rpart - All attributes
 Confusion_table <- bind_rows(Confusion_table,
        data_frame(method = "Rpart - All attributes", 
        Accuracy =accuracy_rpart,SensitivityorRecall = 
@@ -586,15 +598,17 @@ model_rpart_select = rpart(formula = y_output ~ Duration_group+month+poutcome+Ag
 
 p_hat_logit_select <- predict(model_rpart_select, newdata = Portdata_main_test, type = "class")
 
-
+### Cross table of Rpart - Selected attributes
 CrossTable(Portdata_main_test$y_output, p_hat_logit_select,
            prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
            dnn = c('actual default', 'predicted default'))
 
+### RPLOT for the model
 fancyRpartPlot(model_rpart_select ,digits=2, type=2,palettes = c("Purples", "Oranges"))
 
-
-conf_rpart_select <- confusionMatrix(p_hat_logit_select, Portdata_main_test$y_output,mode = "prec_recall", positive = '1')
+### Confusion matrix of Rpart - Selected attributes
+conf_rpart_select <- confusionMatrix(p_hat_logit_select, 
+Portdata_main_test$y_output,mode = "prec_recall", positive = '1')
 
 conf_rpart_select
 
@@ -604,6 +618,7 @@ Specificity_rpart_select = conf_rpart_select$byClass[["Specificity"]]
 Precision_rpart_select = conf_rpart_select$byClass[["Precision"]]
 F1_rpart_select = conf_rpart_select$byClass[["F1"]]
 
+## Binding confusion table for Rpart - Selected attributes
 Confusion_table <- bind_rows(Confusion_table,
       data_frame(method = "Rpart - Selected attributes", 
       Accuracy =accuracy_rpart_select,SensitivityorRecall = 
@@ -621,6 +636,7 @@ Confusion_table %>% knitr::kable()
 In the random forest approach, a large number of decision trees are created. Every observation is fed into every decision tree. The most common outcome for each observation is used as the final output. A new observation is fed into all the trees and taking a majority vote for each classification model.
 
 ```{r RF_data}
+
 # All attributes 
 
 model_rf = randomForest(y_output ~ .,
@@ -628,11 +644,12 @@ model_rf = randomForest(y_output ~ .,
 
 pred_rf <- predict(model_rf, newdata = Portdata_main_test, type = "class") 
 
+### Cross table of RF - All attributes
 CrossTable(Portdata_main_test$y_output, pred_rf,
            prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
            dnn = c('actual default', 'predicted default'))
 
-
+### Confusion matrix of RF - All attributes
 conf_rf <- confusionMatrix(pred_rf, Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
 
 conf_rf
@@ -643,7 +660,7 @@ Specificity_rf = conf_rf$byClass[["Specificity"]]
 Precision_rf = conf_rf$byClass[["Precision"]]
 F1_rf = conf_rf$byClass[["F1"]]
 
-
+## Binding confusion table for RF - All attributes
 Confusion_table <- bind_rows(Confusion_table,
   data_frame(method = "RF - All attributes", Accuracy =accuracy_rf,
   SensitivityorRecall = Sensitivity_rf, 
@@ -658,12 +675,14 @@ model_rf_select = randomForest(y_output ~ Duration_group+month+poutcome+Age_grou
 
 pred_rf_select <- predict(model_rf_select, newdata = Portdata_main_test, type = "class") 
 
+### Cross table of RF - Selected attributes
 CrossTable(Portdata_main_test$y_output, pred_rf_select,
            prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
            dnn = c('actual default', 'predicted default'))
 
-
-conf_rf_select <- confusionMatrix(pred_rf_select, Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
+### Confusion matrix of RF - Selected attributes
+conf_rf_select <- confusionMatrix(pred_rf_select, 
+Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
 
 conf_rf_select
 
@@ -673,7 +692,7 @@ Specificity_rf_select = conf_rf_select$byClass[["Specificity"]]
 Precision_rf_select = conf_rf_select$byClass[["Precision"]]
 F1_rf_select = conf_rf_select$byClass[["F1"]]
 
-
+## Binding confusion table for RF - Selected attributes
 Confusion_table <- bind_rows(Confusion_table,
       data_frame(method = "RF - Selected attributes", 
       Accuracy =accuracy_rf_select,SensitivityorRecall = 
@@ -698,12 +717,12 @@ model_knn <- train(y_output ~ ., data = Portdata_main_train, method = "knn",
 
 pred_kNN <- predict(model_knn , Portdata_main_test)
 
-
+### Cross table of KNN-All attributes
 CrossTable(Portdata_main_test$y_output, pred_kNN,
            prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
            dnn = c('actual default', 'predicted default'))
 
-
+### Confusion matrix of KNN-All attributes
 conf_knn <- confusionMatrix(pred_kNN , Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
 conf_knn
 
@@ -713,10 +732,11 @@ Specificity_knn = conf_knn$byClass[["Specificity"]]
 Precision_knn = conf_knn$byClass[["Precision"]]
 F1_knn = conf_knn$byClass[["F1"]]
 
-
+## Binding confusion table for KNN-All attributes
 Confusion_table <- bind_rows(Confusion_table,
       data_frame(method = "KNN-All attributes", 
-      Accuracy =accuracy_knn,SensitivityorRecall = Sensitivity_knn,       Specificity=Specificity_knn,Precision = Precision_knn, 
+      Accuracy =accuracy_knn,SensitivityorRecall = Sensitivity_knn,
+      Specificity=Specificity_knn,Precision = Precision_knn, 
       F1= F1_knn))
 
 Confusion_table %>% knitr::kable()
@@ -731,7 +751,7 @@ Classification accuracy alone can be misleading if you have an unequal number of
 
 Calculating a confusion matrix can give you a better idea of what your classification model is getting right and what types of errors it is making.
 
-As there are many parameters present in the confusion matrix, we are concentrating on the below parameters for our analysis.
+As there were many parameters present in the confusion matrix, we were concentrating on the below parameters for our analysis.
 
 Accuracy - Accuracy is the most intuitive performance measure and it is simply a ratio of correctly predicted observation to the total observations. One may think that, if we have high accuracy then our model is best. Yes, accuracy is a great measure but only when you have symmetric datasets where values of false positive and false negatives are almost same. Therefore, you have to look at other parameters to evaluate the performance of your model.
 
@@ -773,13 +793,14 @@ glm_fit_final <- Portdata_main %>%
 p_hat_logit_final <- predict(glm_fit_final, newdata = Portdata_validation, type = "response") 
 y_hat_logit_final <- ifelse(p_hat_logit_final > 0.25,1, 0) %>% factor
 
-
+### Cross table of GLM - Final - All
 CrossTable(Portdata_validation$y_output, y_hat_logit_final,
            prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
            dnn = c('actual default', 'predicted default'))
 
-
-conf_glm_final <- confusionMatrix(y_hat_logit_final, Portdata_validation$y_output, mode = "prec_recall", positive = '1')
+### Confusion matrix of GLM - Final - All
+conf_glm_final <- confusionMatrix(y_hat_logit_final, 
+Portdata_validation$y_output, mode = "prec_recall", positive = '1')
 
 conf_glm_final
 
@@ -789,9 +810,9 @@ Specificity_glm_final = conf_glm_final$byClass[["Specificity"]]
 Precision_glm_final = conf_glm_final$byClass[["Precision"]]
 F1_glm_final = conf_glm_final$byClass[["F1"]]
 
-
-Confusion_table_final <- data_frame(method = "GLM - Final 
-          - All attributes", Accuracy =accuracy_glm_final,
+## Creating confusion table final for GLM - Final - All
+Confusion_table_final <- data_frame(method = "GLM - Final - All", 
+          Accuracy =accuracy_glm_final,
           SensitivityorRecall = Sensitivity_glm_final, 
           Specificity=Specificity_glm_final,
           Precision = Precision_glm_final, F1= F1_glm_final  )
@@ -803,16 +824,20 @@ Confusion_table_final %>% knitr::kable()
 # Selected attributes
 
 glm_fit_select_final <- Portdata_main %>% 
-  glm(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group, data=., family = binomial(link='logit'))
-p_hat_logit_select_final <- predict(glm_fit_select_final, newdata = Portdata_validation, type = "response") 
+glm(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group,
+data=., family = binomial(link='logit'))
+p_hat_logit_select_final <- predict(glm_fit_select_final, newdata =
+      Portdata_validation, type = "response") 
 y_hat_logit_select_final <- ifelse(p_hat_logit_select_final > 0.25,1, 0) %>% factor
 
-
+### Cross table of GLM - Final - selected
 CrossTable(Portdata_validation$y_output, y_hat_logit_select_final,
            prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
            dnn = c('actual default', 'predicted default'))
 
-conf_glm_select_final <- confusionMatrix(y_hat_logit_select_final, Portdata_validation$y_output, mode = "prec_recall", positive = '1')
+### Confusion matrix of GLM - Final - selected
+conf_glm_select_final <- confusionMatrix(y_hat_logit_select_final, 
+Portdata_validation$y_output, mode = "prec_recall", positive = '1')
 
 conf_glm_select_final
 
@@ -822,12 +847,13 @@ Specificity_glm_select_final = conf_glm_select_final$byClass[["Specificity"]]
 Precision_glm_select_final = conf_glm_select_final$byClass[["Precision"]]
 F1_glm_select_final = conf_glm_select_final$byClass[["F1"]]
 
-
+## Binding confusion table final for GLM - Final - selected
 Confusion_table_final <- bind_rows(Confusion_table_final,
-      data_frame(method = "GLM - Final - selected attributes", 
+      data_frame(method = "GLM - Final - selected", 
       Accuracy =accuracy_glm_select_final,SensitivityorRecall = 
       Sensitivity_glm_select_final, 
-      Specificity=Specificity_glm_select_final,Precision =               Precision_glm_select_final, F1= F1_glm_select_final))
+      Specificity=Specificity_glm_select_final,Precision =      
+      Precision_glm_select_final, F1= F1_glm_select_final))
 
 
 Confusion_table_final %>% knitr::kable()
@@ -842,13 +868,14 @@ model_rf_final = randomForest(y_output ~ .,
 
 pred_rf_final <- predict(model_rf_final, newdata = Portdata_validation, type = "class") 
 
-
+### Cross table of RF - Final - All
 CrossTable(Portdata_validation$y_output, pred_rf_final,
            prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
            dnn = c('actual default', 'predicted default'))
 
-
-conf_rf_final <- confusionMatrix(pred_rf_final, Portdata_validation$y_output, mode = "prec_recall", positive = '1')
+### Confusion matrix of RF - Final - All
+conf_rf_final <- confusionMatrix(pred_rf_final, 
+Portdata_validation$y_output, mode = "prec_recall", positive = '1')
 
 conf_rf_final
 
@@ -858,9 +885,9 @@ Specificity_rf_final = conf_rf_final$byClass[["Specificity"]]
 Precision_rf_final = conf_rf_final$byClass[["Precision"]]
 F1_rf_final = conf_rf_final$byClass[["F1"]]
 
-
+## Binding confusion table final for RF - Final - All
 Confusion_table_final <- bind_rows(Confusion_table_final,
-    data_frame(method = "RF - Final - All attributes", 
+    data_frame(method = "RF - Final - All", 
     Accuracy =accuracy_rf_final,SensitivityorRecall = 
     Sensitivity_rf_final,Specificity=Specificity_rf_final,
     Precision = Precision_rf_final, F1= F1_rf_final))
@@ -870,18 +897,19 @@ Confusion_table_final %>% knitr::kable()
 
 # Selected attributes
 
-
 model_rf_select_final = randomForest(y_output ~ Duration_group+month+poutcome+Age_group+pdays_group,
                                data = Portdata_main)
 
 pred_rf_select_final <- predict(model_rf_select_final, newdata = Portdata_validation, type = "class") 
 
+### Cross table of RF - Final - Selected
 CrossTable(Portdata_validation$y_output, pred_rf_select_final,
            prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
            dnn = c('actual default', 'predicted default'))
 
-
-conf_rf_select_final <- confusionMatrix(pred_rf_select_final, Portdata_validation$y_output, mode = "prec_recall", positive = '1')
+### Confusion matrix of RF - Final - Selected
+conf_rf_select_final <- confusionMatrix(pred_rf_select_final, 
+Portdata_validation$y_output, mode = "prec_recall", positive = '1')
 
 conf_rf_select_final
 
@@ -891,9 +919,9 @@ Specificity_rf_select_final = conf_rf_select_final$byClass[["Specificity"]]
 Precision_rf_select_final = conf_rf_select_final$byClass[["Precision"]]
 F1_rf_select_final = conf_rf_select_final$byClass[["F1"]]
 
-
+## Binding confusion table final for RF - Final - Selected
 Confusion_table_final <- bind_rows(Confusion_table_final,
-      data_frame(method = "RF - Final - Selected attributes", 
+      data_frame(method = "RF - Final - Selected", 
       Accuracy =accuracy_rf_select_final,
       SensitivityorRecall = Sensitivity_rf_select_final, 
       Specificity=Specificity_rf_select_final,Precision = 
@@ -903,4 +931,25 @@ Confusion_table_final %>% knitr::kable()
 
 ```
 
+The best accuracy(0.9075) came for the RandomForest model with all attributes. The second best accuracy(0.9024) came for the RandomForest model with selected attributes.
+
+The best sensitivity or Recall(0.6275) came for the GLM model with all attributes. The second best sensitivity(0.6143) came for the GLM model with selected attributes.
+
+The best specificity(0.9719) came for the RandomForest model with selected attributes. The second best specificity(0.9644) came for the RandomForest model with all attributes.
+
+The best Precision(0.64102) came for the RandomForest model with selected attributes. The second best Precision (0.6405) came for the RandomForest model with all attributes.
+
+The best F1 (0.5763) came for the GLM model with all attributes. The second best F1(0.5536) came for the GLM model with selected attributes.
+
 # Conclusion
+
+We have built a machine learning algorithm with different models to predict whether a client will subscribe the term deposit or not. We have ran through different algorithms like GLM, RPART, RandomForest and Knn with all attributes and selected attributes. Finally, we have concentrated on the GLM and RandonForest algorithms based on the initial testing results. GLM all attributes and selected attributes had good results on Sensitivity or Recall and F1 values whereas RandomForest all attributes and selected attributes had good values of Accuracy, Specificity and Precision. Based on the collective observations, we can conclude that RandonForest model is a better fit for this Portugues marketing dataset analysis. Instead of selecting 5 attributes, we can run all the algorithms with different sets of attributes in a series. But this will become a lengthy analysis and difficult to conclude in a better way.
+
+\pagebreak
+
+# Appendix - Enviroment
+
+```{r}
+print("Operating System:")
+version
+```
