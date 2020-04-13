@@ -94,7 +94,7 @@ Data visualization and data exploration is used to find the interesting trends a
 # Methodology & Analysis
 ## Data Pre-processing
 
-For the better analysis, we have mutated many attributes based on the logical segregation. The below mentioned attributes were mutated.
+For better analysis, we have mutated many attributes based on the logical segregation. The below mentioned attributes were mutated.
 
 1. Age_group - Grouped age data into 4 categories. 
 
@@ -438,7 +438,7 @@ Portdata %>% ggplot(aes(previous_group, y_output, color = previous_group)) +
 
 ```
 
-Based on the above exploration, we can understand that some of the attributes contributes more to the clients subscription decision. We have mentioned below the list of attributes in the order of high impact.
+Based on the above exploration, we can understand that some of the attributes contribute more to the clients subscription decision. We have mentioned below the list of attributes in the order of high impact.
 
 1. Duration_group -  last contact duration
 2. Month - Month of last contact with client 
@@ -448,7 +448,7 @@ Based on the above exploration, we can understand that some of the attributes co
 
 ### Splitting of dataset
 
-We had partitioned the banking dataset into 2 sets[main dataset and validation dataset in the 90:10 ratio]. The main datset is further splitted into train and test dataset[in the same 80:20 ratio]. We were training the dataset with the train set and testing with the test dataset.Then, based on the test results, we had finalised the model. Finally, we implemented the model in the validation dataset for the conclusion. 
+We had partitioned the banking dataset into 2 sets[main dataset and validation dataset in the 90:10 ratio]. The main datset is further split into train and test dataset[in the 80:20 ratio]. We were training the dataset with the train set and testing with the test dataset.Then, based on the test results, we had finalised the model. Finally, we implemented the model in the validation dataset for the conclusion. 
 
 
 
@@ -943,11 +943,11 @@ The best F1 (0.5763) came for the GLM model with all attributes. The second best
 
 # Conclusion
 
-We have built a machine learning algorithm with different models to predict whether a client will subscribe the term deposit or not. We have ran through different algorithms like GLM, RPART, RandomForest and Knn with all attributes and selected attributes. Finally, we have concentrated on the GLM and RandonForest algorithms based on the initial testing results. GLM all attributes and selected attributes had good results on Sensitivity or Recall and F1 values whereas RandomForest all attributes and selected attributes had good values of Accuracy, Specificity and Precision. Based on the collective observations, we can conclude that RandonForest model is a better fit for this Portugues marketing dataset analysis. Instead of selecting 5 attributes, we can run all the algorithms with different sets of attributes in a series. But this will become a lengthy analysis and difficult to conclude in a better way.
+We have built a machine learning algorithm with different models to predict whether a client will subscribe the term deposit or not. We ran through different algorithms like GLM, RPART, RandomForest and Knn with all attributes and selected attributes. Finally, we have concentrated on the GLM and RandonForest algorithms based on the initial testing results. GLM all attributes and selected attributes had good results on Sensitivity or Recall and F1 values whereas RandomForest all attributes and selected attributes had good values of Accuracy, Specificity and Precision. Based on the collective observations, we can conclude that RandonForest model is a better fit for this Portugues marketing dataset analysis. Instead of selecting 5 attributes, we can run all the algorithms with different sets of attributes in a series. But this will become a lengthy analysis and difficult to conclude in a better way. It is also time-consuming and does not give a desirable outcome.
 
 \pagebreak
 
-# Appendix - Enviroment
+# Appendix - Environment
 
 ```{r}
 print("Operating System:")
