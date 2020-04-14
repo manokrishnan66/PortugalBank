@@ -19,7 +19,7 @@ We chose Bank Marketing Data set for the final project on Data science. This is 
 
 This dataset is downloaded from UCI Machi Learning Repository. This is related to direct marketing campaigns of the Portuguese Banking institution. This dataset is available at http://archive.ics.uci.edu/ml/datasets/Bank+Marketing. There were 4 datasets in it from which bank-full.csv is used that has all examples (45211) and 17 inputs ordered by date. There are 16 input variables and 1 output variable (desired target).
 
-This had different categories of client data like job, age, marital, education, default, housing, loan, contact, month, balance, day_of_week, duration, campaign, pdays, previous, poutcome and one output variable y that denotes if client subscribed to term deposit or not. These data denote telemarketing data, customer data and some other data. Here, many attributes are numerical and some are categorical. We loaded the dataset in the R studio and checked for any missing values using is.na fucntion and found not missing data. Hence, we have clean data.
+This had different categories of client data like job, age, marital, education, default, housing, loan, contact, month, balance, day_of_week, duration, campaign, pdays, previous, poutcome and one output variable y that denotes if client subscribed to term deposit or not. These data denote telemarketing data, customer data and some other data. Here, many attributes are numerical and some are categorical. We loaded the dataset in the R studio and checked for any missing values using is.na fucntion and found no missing data. Hence, we have clean data.
 
 ### Libraries
 
@@ -110,7 +110,7 @@ If balance is between 1 and mean of the total balance amount , we consider it as
 If balance is between mean of the total balance amount and 50000 , we consider it as 'Above average' group.
 If balance is greater than 50000, we consider it as 'HNI' group. 
 
-3. day_group - Grouped day data into 4 categories
+3. day_group - Grouped day data into 3 categories
 
 If day is between 1 and 10 , we consider it as 'Early Month' group. If day is between 11 and 20 , we consider it as 'Mid month' group.
 If day is between 21 and 31, we consider it as 'Month end' group. 
@@ -134,7 +134,8 @@ If campaign is above 20, we consider it as 'Heavy Campaign' group.
 If pdays is between -1 and mean of the pdays , we consider it as 'Less gap Pdays' group. 
 If pdays is between mean of the pdays and 100, we consider it as 'Medium gap Pdays' group.
 If pdays is greater 100, we consider it as 'Large gap Pdays' group. 
-7. previous_group - Grouped previous data into 4 categories
+
+7. previous_group - Grouped previous data into 3 categories
 
 If previous is 0 , we consider it as 'Zero' group. 
 If previous is 1, we consider it as 'One' group.
@@ -187,8 +188,10 @@ Portdata <- Portdata %>% mutate(y_output = ifelse(y == "no", 0, 1))
 
 Portdata <- Portdata %>% mutate(y_output = as.factor(y_output))
 
+## Removing original columns
 Portdata <- Portdata %>% select(-age,-balance,-day,-duration,-campaign,-pdays,-previous,-y)
 
+## converting into factor
 Portdata <- Portdata %>% mutate(Age_group = as.factor(Age_group),
                                 Cust_group = as.factor(Cust_group),
                                 day_group = as.factor(day_group),
@@ -198,7 +201,7 @@ Portdata <- Portdata %>% mutate(Age_group = as.factor(Age_group),
                                 Duration_group = as.factor(Duration_group),
                                 y_output = as.factor(y_output) )
 
-
+## Converting all characters into factors
 Portdata=Portdata %>% mutate_if(is.character, as.factor)
 
 ```
@@ -207,11 +210,12 @@ Portdata=Portdata %>% mutate_if(is.character, as.factor)
 
 ### General Data Information
 
+
 ```{r General_data_info}
-# The few rows of the Portdata are presented below:
+# The first 6 rows of the dataset will be displayed to review the dataset.
 head(Portdata) 
 
-# Summary Statistics of Portdata
+# Summary Statistics of Portdata which explains the overview of the all columns.
 summary(Portdata)
 ```
 
@@ -462,6 +466,7 @@ Portdata_main <- Portdata[-Valid_index,]
 Portdata_validation <- Portdata[Valid_index,]
 
 # Splitting Portdata_main into 2 sets for initial testing
+# Test dataset is 20% of the Portdata_main dataset
 set.seed(2, sample.kind="Rounding")
 # if using R 3.5 or earlier, use `set.seed(1)` instead
 test_index <- createDataPartition(y = Portdata_main$y, times = 1, p = 0.2, list = FALSE)
@@ -474,7 +479,7 @@ Portdata_main_test <- Portdata_main[test_index,]
 
 ### GLM:
 
-Logistic regression is useful when you are predicting a binary outcome from a set of continuous predictor variables. It is frequently preferred over discriminant function analysis because of its less restrictive assumptions.
+Logistic regression is useful when you are predicting a binary outcome from a set of continuous predictor variables. It is frequently preferred over discriminant function analysis because of its less restrictive assumptions. In the logit model the log odds of the outcome is modeled as a linear combination of the predictor variables.
 
 ```{r GLM_data}
 
@@ -723,7 +728,8 @@ CrossTable(Portdata_main_test$y_output, pred_kNN,
            dnn = c('actual default', 'predicted default'))
 
 ### Confusion matrix of KNN-All attributes
-conf_knn <- confusionMatrix(pred_kNN , Portdata_main_test$y_output, mode = "prec_recall", positive = '1')
+conf_knn <- confusionMatrix(pred_kNN , Portdata_main_test$y_output,
+            mode = "prec_recall", positive = '1')
 conf_knn
 
 accuracy_knn = conf_knn$overall[["Accuracy"]]

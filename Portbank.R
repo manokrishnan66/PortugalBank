@@ -78,14 +78,6 @@ head(Portdata)
 # Summary Statistics of Portdata
 summary(Portdata)
 
-##Portdata %>% group_by(poutcome,y) %>% summarise(n()) 
-#%>% filter (duration > 700) 
-# Age - categ 0.422, 0.3402 4:
-# Month - Categ 0.51991, 0.467 2:
-# Poutcome - Categ 0.647, 0.166 3:
-# Duration group - Categ 0.607, 0.538 - 1:
-# pdays_group categ - 0.4797, 0.188 - 5:
-
 # Data Exploration
 
 ### Exploration of Age attribute
@@ -318,7 +310,6 @@ Portdata_main_test <- Portdata_main[test_index,]
 ## Data Analysis and modelling
 
 ##GLM:
-
 
 glm_fit <- Portdata_main_train %>% 
   glm(y_output ~ ., data=., family = binomial(link='logit'))
